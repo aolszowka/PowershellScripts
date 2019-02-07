@@ -25,9 +25,9 @@ function Generate-StyleCopPatchSubversion
                 [System.IO.Path]::Combine($WorkingCopy, "Dotnet", "CUBO.sln"),
                 [System.IO.Path]::Combine($WorkingCopy, "Fusion", "CU.Fusion.Client.sln"),
                 [System.IO.Path]::Combine($WorkingCopy, "Fusion", "CU.Fusion.Server.sln")
-                )
+            )
 
-            ForEach($solution in $solutionsToApplyRulesTo) 
+            ForEach ($solution in $solutionsToApplyRulesTo) 
             {
                 Write-Host "Applying StyleCop Rule $StyleCopRule to $solution"
                 StyleCop-ApplyRule -SolutionFile $solution -StyleCopRule $StyleCopRule
@@ -89,7 +89,7 @@ function FormatCSharpFiles-Execute
         [System.IO.Path]::Combine($WorkingCopy, "Fusion")
     )
 
-    foreach($folderToFormat in $foldersToFormat)
+    foreach ($folderToFormat in $foldersToFormat)
     {
         S:\TimsInternalSVN\X\Trunk\Build\RoslynDocumentFormatting\FormatCSharpFiles\bin\Release\FormatCSharpFiles.exe $folderToFormat S:\TimsInternalSVN\X\Trunk\Build\RoslynDocumentFormatting\FormatCSharpFiles\bin\Release\Filters.txt
     }
@@ -115,12 +115,12 @@ function SVN-CreatePatchFile
     $patchOutput | Out-File $PatchOutputLocation
 }
 
-$versions = @("6","7","8")
+$versions = @("6", "7", "8")
 $styleCopRules = @("SA1111")
 
-foreach($styleCopRule in $styleCopRules)
+foreach ($styleCopRule in $styleCopRules)
 {
-    foreach($version in $versions)
+    foreach ($version in $versions)
     {
         $folderToModify = "S:\TimsSVN\" + $version + "x\Trunk"
         $saveLocation = "R:\StyleCopPatches\" + $version + "T\"
