@@ -22,9 +22,6 @@ public static class SolutionUtilities
 '@ -ReferencedAssemblies $msBuildAssembly
 
 # Find all SLN Files
-$slnFiles = Get-ChildItem -Path $DirectoryToScan -Filter *.sln -Recurse
-
-foreach($slnFile in $slnFiles)
-{
-   Write-Host "$($slnFile.FullName)`t$([SolutionUtilities]::ProjectCount($slnFile.FullName))"
+Get-ChildItem -Path $DirectoryToScan -Filter *.sln -Recurse | ForEach-Object {
+    New-Object psobject -Property @{FileName = $_.FullName; ProjectCount = [SolutionUtilities]::ProjectCount($_.FullName) }
 }
