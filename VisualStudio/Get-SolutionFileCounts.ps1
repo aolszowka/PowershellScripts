@@ -15,8 +15,19 @@ public static class SolutionUtilities
 {
     public static int ProjectCount(string solutionFile)
     {
-        SolutionFile sln = SolutionFile.Parse(solutionFile);
-        return sln.ProjectsByGuid.Count;
+        int numberOfProjects = -1;
+
+        try
+        {
+            SolutionFile sln = SolutionFile.Parse(solutionFile);
+            numberOfProjects = sln.ProjectsByGuid.Count;
+        }
+        catch
+        {
+            // Best Effort Don't Worry about errors
+        }
+
+        return numberOfProjects;
     }
 }
 '@ -ReferencedAssemblies $msBuildAssembly
