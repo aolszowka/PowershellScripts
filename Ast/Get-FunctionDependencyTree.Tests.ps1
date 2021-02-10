@@ -44,5 +44,23 @@ Describe "Get-FunctionDependencyTree.ps1" {
             ($result | Measure-Object).Count | Should -Be 2
             $result | Should -Be @("Primary", "Secondary")
         }
+
+        it 'should follow down call tree all the way' {
+            # Arrange
+            function Primary {
+                Secondary
+            }
+
+            function Secondary {
+                Write-Host "Test"
+            }
+
+            # Act
+            $result = Get-FunctionDependencyTree -Function Primary
+
+            # Assert
+            ($result | Measure-Object).Count | Should -Be 3
+            $result | Should -Be @("Primary", "Secondary", "Write-Host")
+        }
     }
 }
