@@ -10,8 +10,8 @@ Describe "Get-FunctionDependencyTree.ps1" {
             $result = Get-FunctionDependencyTree -Function SimpleFunction
 
             # Assert
-            ($result | Measure-Object).Count | Should -Be 1
-            $result | Should -Be "Write-Host"
+            ($result | Measure-Object).Count | Should -Be 2
+            $result | Should -Be @("SimpleFunction", "Write-Host")
         }
 
         it 'should follow down call tree' {
@@ -27,8 +27,8 @@ Describe "Get-FunctionDependencyTree.ps1" {
             $result = Get-FunctionDependencyTree -Function Primary
 
             # Assert
-            ($result | Measure-Object).Count | Should -Be 1
-            $result | Should -Be "Secondary"
+            ($result | Measure-Object).Count | Should -Be 2
+            $result | Should -Be @("Primary", "Secondary")
         }
     }
 }

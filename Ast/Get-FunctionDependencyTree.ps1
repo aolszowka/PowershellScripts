@@ -1,32 +1,33 @@
-function Primary {
-    param (
-        
-    )
-    Write-Host "Primary"
-    Secondary
-}
-
-function Secondary {
-    param (
-        
-    )
-    Write-Host "Secondary"
-    Tertiary -SayWhat "Tertiary"
-}
-
-function Tertiary {
-    param (
-        [string]$SayWhat
-    )
-    Write-Host $SayWhat
-}
-
 function Get-FunctionDependencyTree {
+    <#
+    .SYNOPSIS
+    Return all N-Order dependent functions.
+    .DESCRIPTION
+    Given a function name return a listing that contains all of the distinct
+    N-Order functions dependend upon by this function, including the target
+    function.
+    .PARAMETER Function
+    The function for which to generate the dependency tree for.
+    .OUTPUTS
+    [hashtable[string]] or [string]
+    The name of the given function and its N-Order dependent functions
+    .EXAMPLE
+    Get-FunctionDependencyTree -Function Get-FunctionDependencyTree
+    #>
     param (
         [string]$Function
     )
     begin {
         function Get-DistinctFunctionsInFunction {
+            <#
+            .SYNOPSIS
+            (Internal) Return distinct functions utilized by the given function
+            .EXAMPLE
+            Get-DistinctFunctionsInFunction -Function Get-DistinctFunctionsInFunction
+            .OUTPUTS
+            [string[]] or nothing
+            The distinct functions called within the given function
+            #>
             param (
                 [string]$Function
             )
@@ -52,6 +53,9 @@ function Get-FunctionDependencyTree {
         [System.Collections.Generic.Stack[string]]$unresolved = [System.Collections.Generic.Stack[string]]::new()
         [System.Collections.Generic.HashSet[string]]$resolved = [System.Collections.Generic.HashSet[string]]::new()
 
+        # Add ourselves to the list of resolved
+        $resolved.Add($Function) | Out-Null
+
         # Do the initial load
         $currentFunctionCalls = Get-DistinctFunctionsInFunction -Function $Function
         foreach ($funCall in $currentFunctionCalls) {
@@ -74,5 +78,3 @@ function Get-FunctionDependencyTree {
         $resolved
     }
 }
-
-Get-FunctionDependencyTree -Function 'Primary'
