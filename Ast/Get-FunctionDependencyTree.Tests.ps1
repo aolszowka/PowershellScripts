@@ -107,12 +107,15 @@ Describe "Get-FunctionDependencyTree.ps1" {
         }
 
         it 'should support pipeline input' {
+            # Arrange
+            function Pipeline {
+            }
+
             # Act
-            $result = 'Get-FunctionDependencyTree' | Get-FunctionDependencyTree 
+            $result = 'Pipeline' | Get-FunctionDependencyTree 
 
             # Assert
-            ($result | Measure-Object).Count | Should -Be 6
-            $result | Should -Be @('Get-FunctionDependencyTree', 'Get-DistinctFunctionsInFunction', 'Get-Unique', 'ForEach-Object', 'Get-Command', 'Out-Null')
+            ($result | Measure-Object).Count | Should -Be 1
+            $result | Should -Be @('Pipeline')
         }
-    }
 }
