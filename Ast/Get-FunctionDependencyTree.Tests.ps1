@@ -1,6 +1,20 @@
 Describe "Get-FunctionDependencyTree.ps1" {
     Context "Functionality Tests" {
-        it 'should have a single result with a simple function' {
+        it 'should work if there are no sub-functions' {
+            # Arrange
+            function NoSubfunctions {
+            }
+
+            # Act
+            $result = Get-FunctionDependencyTree -Function NoSubfunctions
+
+            # Assert
+            ($result | Measure-Object).Count | Should -Be 1
+            $result | Should -Be "NoSubfunctions"
+
+        }
+
+        it 'should work with a simple function' {
             # Arrange
             function SimpleFunction {
                 Write-Host
