@@ -73,14 +73,14 @@ Describe "Get-FunctionDependencyTree.ps1" {
                 Secondary
                 Write-Host "Test"
             }
-            
+
             function Secondary {
                 Write-Host "Test"
             }
-            
+
             # Act
             $result = Get-FunctionDependencyTree -Function Primary
-            
+
             # Assert
             ($result | Measure-Object).Count | Should -Be 3
             $result | Should -Be @("Primary", "Write-Host", "Secondary")
@@ -91,10 +91,10 @@ Describe "Get-FunctionDependencyTree.ps1" {
             function Pipeline {
                 Get-Process | Where-Object { $_.Name -eq "pwsh" } | Select-Object * | Format-Table -AutoSize | Out-GridView
             }
-            
+
             # Act
             $result = Get-FunctionDependencyTree -Function Pipeline
-            
+
             # Assert
             ($result | Measure-Object).Count | Should -Be 6
             $result | Should -Be @('Pipeline', 'Out-GridView', 'Format-Table', 'Select-Object', 'Where-Object', 'Get-Process')
