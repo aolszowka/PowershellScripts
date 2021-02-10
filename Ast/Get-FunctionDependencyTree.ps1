@@ -26,9 +26,6 @@ function Get-FunctionDependencyTree {
         [string]$Function
     )
     begin {
-        [System.Collections.Generic.Stack[string]]$unresolved = [System.Collections.Generic.Stack[string]]::new()
-        [System.Collections.Generic.HashSet[string]]$resolved = [System.Collections.Generic.HashSet[string]]::new()
-
         function Get-DistinctFunctionsInFunction {
             param (
                 [string]$Function
@@ -41,15 +38,20 @@ function Get-FunctionDependencyTree {
                     # For now do nothing; but perhaps log verbose?
                 }
                 else {
-                    $Ast = $scriptBlock.Ast
-                    $Functions = $Ast.FindAll( { $args[0] -is [System.Management.Automation.Language.CommandAst] }, $true)
-                    $Functions | ForEach-Object { $_.GetCommandName() } | Get-Unique
+                    # Utilize the PowerShell Abstract Syntax Tree to Parse
+                    # See https://powershell.one/powershell-internals/parsing-and-tokenization/abstract-syntax-tree
+                    $ast = $scriptBlock.Ast
+                    $functions = $ast.FindAll( { $args[0] -is [System.Management.Automation.Language.CommandAst] }, $true)
+                    $functions | ForEach-Object { $_.GetCommandName() } | Get-Unique
                 }
             }
         }
     }
 
     process {
+        [System.Collections.Generic.Stack[string]]$unresolved = [System.Collections.Generic.Stack[string]]::new()
+        [System.Collections.Generic.HashSet[string]]$resolved = [System.Collections.Generic.HashSet[string]]::new()
+
         # Do the initial load
         $currentFunctionCalls = Get-DistinctFunctionsInFunction -Function $Function
         foreach ($funCall in $currentFunctionCalls) {
