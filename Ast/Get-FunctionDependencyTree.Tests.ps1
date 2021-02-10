@@ -62,5 +62,24 @@ Describe "Get-FunctionDependencyTree.ps1" {
             ($result | Measure-Object).Count | Should -Be 3
             $result | Should -Be @("Primary", "Secondary", "Write-Host")
         }
+
+        it 'should return only distinct invocations' {
+            # Arrange
+            function Primary {
+                Secondary
+                Write-Host "Test"
+            }
+            
+            function Secondary {
+                Write-Host "Test"
+            }
+            
+            # Act
+            $result = Get-FunctionDependencyTree -Function Primary
+            
+            # Assert
+            ($result | Measure-Object).Count | Should -Be 3
+            $result | Should -Be @("Primary", "Write-Host", "Secondary")
+        }
     }
 }
