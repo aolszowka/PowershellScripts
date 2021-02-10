@@ -11,61 +11,66 @@ function Secondary {
         
     )
     Write-Host "Secondary"
-    Write-Host "Again"
+    Tertiary -SayWhat "Tertiary"
+}
+
+function Tertiary {
+    param (
+        [string]$SayWhat
+    )
+    Write-Host $SayWhat
 }
 
 function Get-FunctionDependencyTree {
     param (
         [string]$Function
     )
+    begin {
+        [System.Collections.Generic.Stack[string]]$unresolved = [System.Collections.Generic.Stack[string]]::new()
+        [System.Collections.Generic.HashSet[string]]$resolved = [System.Collections.Generic.HashSet[string]]::new()
+
+        function Get-DistinctFunctionsInFunction {
+            param (
+                [string]$Function
+            )
+            process {
+                # Attempt to extract the ScriptBlock using Get-Command some of
+                # the built in's such as Write-Host do not return anything
+                $scriptBlock = (Get-Command $Function).ScriptBlock
+                if ($null -eq $scriptBlock) {
+                    # For now do nothing; but perhaps log verbose?
+                }
+                else {
+                    $Ast = $scriptBlock.Ast
+                    $Functions = $Ast.FindAll( { $args[0] -is [System.Management.Automation.Language.CommandAst] }, $true)
+                    $Functions | ForEach-Object { $_.GetCommandName() } | Get-Unique
+                }
+            }
+        }
+    }
+
     process {
-        $Ast = (Get-Command $Function).ScriptBlock.Ast
-        $Functions = $Ast.FindAll( { $args[0] -is [System.Management.Automation.Language.CommandAst] }, $true)
-        $Functions | ForEach-Object { $_.GetCommandName() } | Get-Unique | Where-Object { (Get-Command $_).Source -eq "" }
+        # Do the initial load
+        $currentFunctionCalls = Get-DistinctFunctionsInFunction -Function $Function
+        foreach ($funCall in $currentFunctionCalls) {
+            $unresolved.Push($funCall)
+        }
+
+        # While we still have unresolved functions, recurse
+        while ($unresolved.Count -ne 0) {
+            $currentFunction = $unresolved.Pop()
+            # Don't attempt to resolve anything that was already resolved
+            if ($resolved.Contains($currentFunction) -ne $true) {
+                $resolved.Add($currentFunction) | Out-Null
+                $currentFunctionCalls = Get-DistinctFunctionsInFunction -Function $currentFunction
+                foreach ($funCall in $currentFunctionCalls) {
+                    $unresolved.Push($funCall)
+                }
+            }
+        }
+
+        $resolved
     }
 }
 
 Get-FunctionDependencyTree -Function 'Primary'
-
-# $Ast = (Get-Command Primary).ScriptBlock.Ast
-# $Functions = $Ast.FindAll( { $args[0] -is [System.Management.Automation.Language.CommandAst] }, $true)
-# $Functions | ForEach-Object { $_.GetCommandName() } | Get-Unique | Where-Object { (Get-Command $_).Source -eq "" }
-
-
-Function Get-DependentFunction {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
-        [String[]]
-        $Name
-    )
-
-    begin {
-        [ScriptBlock]$predicate = {
-            Param ([System.Management.Automation.Language.Ast]$Ast)
-        
-            $Ast -is [System.Management.Automation.Language.CommandAst]
-        }
-    }
-
-    process {
-        foreach ($funcName in $Name) {
-            $func = Get-Item -Path Function:$funcName -ErrorAction SilentlyContinue
-            if (-not $func) {
-                Write-Error -Message "Failed to find function $funName" -Category ObjectNotFound
-                return
-            }
-
-            $ast = $func.ScriptBlock.Ast
-            [System.Management.Automation.Language.Ast[]]$violations = $ast.FindAll($predicate, $true)
-
-            [PSCustomObject]@{
-                Name     = $funcName
-                Commands = [string[]]@($violations.Extent.Text)
-            }
-        }
-
-    }
-}
-
-#Get-DependentFunction -Name Secondary
