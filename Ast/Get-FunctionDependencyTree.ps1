@@ -15,6 +15,7 @@ function Get-FunctionDependencyTree {
     Get-FunctionDependencyTree -Function Get-FunctionDependencyTree
     #>
     param (
+        [Parameter(Mandatory = $true)]
         [string]$Function
     )
     begin {

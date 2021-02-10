@@ -3,6 +3,12 @@ Describe "Get-FunctionDependencyTree.ps1" {
         . $PSScriptRoot\Get-FunctionDependencyTree.ps1
     }
 
+    Context "Parameter Validation" {
+        it 'should require a Function Name' {
+            (Get-Command Get-FunctionDependencyTree) | Should -HaveParameter Function -Mandatory -Type [string]
+        }
+    }
+
     Context "Functionality Tests" {
         it 'should work if there are no sub-functions' {
             # Arrange
