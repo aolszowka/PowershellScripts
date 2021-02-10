@@ -14,8 +14,9 @@ function Get-FunctionDependencyTree {
     .EXAMPLE
     Get-FunctionDependencyTree -Function Get-FunctionDependencyTree
     #>
+    [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [string]$Function
     )
     begin {

@@ -105,5 +105,14 @@ Describe "Get-FunctionDependencyTree.ps1" {
             ($result | Measure-Object).Count | Should -Be 6
             $result | Should -Be @('Pipeline', 'Out-GridView', 'Format-Table', 'Select-Object', 'Where-Object', 'Get-Process')
         }
+
+        it 'should support pipeline input' {
+            # Act
+            $result = 'Get-FunctionDependencyTree' | Get-FunctionDependencyTree 
+
+            # Assert
+            ($result | Measure-Object).Count | Should -Be 6
+            $result | Should -Be @('Get-FunctionDependencyTree', 'Get-DistinctFunctionsInFunction', 'Get-Unique', 'ForEach-Object', 'Get-Command', 'Out-Null')
+        }
     }
 }
