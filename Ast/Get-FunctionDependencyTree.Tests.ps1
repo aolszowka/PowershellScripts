@@ -118,4 +118,26 @@ Describe "Get-FunctionDependencyTree.ps1" {
             ($result | Measure-Object).Count | Should -Be 1
             $result | Should -Be @('Pipeline')
         }
+
+        it 'should support nested functions' {
+            # Arrange
+            function NestedTest {
+                begin {
+                    function NestedFunction {
+                        Write-Host "I was nested"
+                    }
+                }
+                process {
+                    NestedFunction
+                }
+            }
+
+            # Act
+            $result = 'NestedTest' | Get-FunctionDependencyTree
+
+            # Assert
+            ($result | Measure-Object).Count | Should -Be 3
+            $result | Should -Be @('NestedTest', 'NestedFunction', 'Write-Host')
+        }
+    }
 }

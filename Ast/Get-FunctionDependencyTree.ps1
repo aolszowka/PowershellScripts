@@ -34,18 +34,28 @@ function Get-FunctionDependencyTree {
                 [string]$Function
             )
             process {
-                # Attempt to extract the ScriptBlock using Get-Command some of
-                # the built in's such as Write-Host do not return anything
-                $scriptBlock = (Get-Command $Function).ScriptBlock
-                if ($null -eq $scriptBlock) {
-                    # For now do nothing; but perhaps log verbose?
+                # If a function is not defined in the environment (it may be
+                # nested or defined inline for example) then do not attempt
+                # to export the function
+                $gcResult = Get-Command $Function -ErrorAction SilentlyContinue
+
+                if ($null -eq $gcResult) {
+                    Write-Verbose "Failed to find function $Function; Was it nested? Silently Continuing"
                 }
                 else {
-                    # Utilize the PowerShell Abstract Syntax Tree to Parse
-                    # See https://powershell.one/powershell-internals/parsing-and-tokenization/abstract-syntax-tree
-                    $ast = $scriptBlock.Ast
-                    $functions = $ast.FindAll( { $args[0] -is [System.Management.Automation.Language.CommandAst] }, $true)
-                    $functions | ForEach-Object { $_.GetCommandName() } | Get-Unique
+                    # Attempt to extract the ScriptBlock using Get-Command some of
+                    # the built in's such as Write-Host do not return anything
+                    $scriptBlock = ($gcResult).ScriptBlock
+                    if ($null -eq $scriptBlock) {
+                        Write-Verbose "Failed to get a Script Block for function $Function; Is it a .NET cmdlet? Silently Continuing"
+                    }
+                    else {
+                        # Utilize the PowerShell Abstract Syntax Tree to Parse
+                        # See https://powershell.one/powershell-internals/parsing-and-tokenization/abstract-syntax-tree
+                        $ast = $scriptBlock.Ast
+                        $functions = $ast.FindAll( { $args[0] -is [System.Management.Automation.Language.CommandAst] }, $true)
+                        $functions | ForEach-Object { $_.GetCommandName() } | Get-Unique
+                    }
                 }
             }
         }
