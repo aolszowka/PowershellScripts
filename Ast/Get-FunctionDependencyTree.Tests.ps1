@@ -1,4 +1,8 @@
 Describe "Get-FunctionDependencyTree.ps1" {
+    BeforeAll {
+        . $PSScriptRoot\Get-FunctionDependencyTree.ps1
+    }
+
     Context "Functionality Tests" {
         it 'should work if there are no sub-functions' {
             # Arrange
@@ -80,6 +84,20 @@ Describe "Get-FunctionDependencyTree.ps1" {
             # Assert
             ($result | Measure-Object).Count | Should -Be 3
             $result | Should -Be @("Primary", "Write-Host", "Secondary")
+        }
+
+        it 'should support pipelined calls' {
+            # Arrange
+            function Pipeline {
+                Get-Process | Where-Object { $_.Name -eq "pwsh" } | Select-Object * | Format-Table -AutoSize | Out-GridView
+            }
+            
+            # Act
+            $result = Get-FunctionDependencyTree -Function Pipeline
+            
+            # Assert
+            ($result | Measure-Object).Count | Should -Be 6
+            $result | Should -Be @('Pipeline', 'Out-GridView', 'Format-Table', 'Select-Object', 'Where-Object', 'Get-Process')
         }
     }
 }
