@@ -4,7 +4,6 @@ function Get-EnglishForNumber {
     )
     process {
         $EnglishNumbers = @{
-            0   = 'Zero'
             1   = 'One'
             2   = 'Two'
             3   = 'Three'
