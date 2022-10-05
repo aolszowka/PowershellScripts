@@ -32,7 +32,6 @@ function Get-EnglishForNumber {
             70  = 'Seventy'
             80  = 'Eighty'
             90  = 'Ninety'
-            100 = 'Hundred'
         }
 
         $readableNumber = [System.Text.StringBuilder]::new()
