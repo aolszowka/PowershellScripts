@@ -88,7 +88,41 @@ function Invoke-RenameFilesAndTagFLAC {
     process {
         $files = Get-ChildItem -Path $Path -Filter '*.flac'
         foreach ($file in $files) {
-            Get-MetadataForFile -Path $file -Artist $Artist -Album $Album
+            $metaData = Get-MetadataForFile -Path $file -Artist $Artist -Album $Album
+            Set-FLACMetadataForFile -Path $file -FLACMetadata $metaData
+            Move-Item -Path $metaData.OriginalPath -Destination $metaData.NewPath
+        }
+    }
+}
+
+function Set-FLACMetadataForFile {
+    param (
+        [string]$Path,
+        [PSCustomObject]$FLACMetadata
+    )
+    process {
+        $metaflacPath = 'C:\DevApps\System\flac\win64\metaflac.exe'
+
+        # We're going to write out the tags to a temporary file and then import
+        # from it to avoid issues with any command line parser.
+        $tempFile = New-TemporaryFile
+
+        try {
+            # Build up the tags file
+            $commentsFileString = [System.Text.StringBuilder]::new()
+            $commentsFileString.AppendLine("ARTIST=$($FLACMetadata.Artist)") | Out-Null
+            $commentsFileString.AppendLine("TITLE=$($FLACMetadata.TrackTitle)") | Out-Null
+            $commentsFileString.AppendLine("ALBUM=$($FLACMetadata.Album)") | Out-Null
+            $commentsFileString.AppendLine("TRACKNUMBER=$($FLACMetadata.TrackNumber)") | Out-Null
+            $commentsFileString.Append("COMMENT=$($FLACMetadata.Comment)") | Out-Null # Last Line No New Line
+            $commentsFileString.ToString() | Set-Content -Path $tempFile
+
+            # For now we're just going to overwrite any existing tags with our
+            # specified ones
+            &$metaflacPath --preserve-modtime --remove-all-tags --import-tags-from=$($tempFile.FullName) $Path
+        }
+        finally {
+            Remove-Item $tempFile
         }
     }
 }
@@ -108,7 +142,7 @@ function Get-MetadataForFile {
             TrackTitle   = [string]::Empty
             Artist       = $Artist
             Album        = $Album
-            Comments = "As read by Ace Olszowka"
+            Comment     = "As read by Ace Olszowka"
         }
 
         $fileName = [System.IO.Path]::GetFileNameWithoutExtension($Path)
@@ -120,24 +154,24 @@ function Get-MetadataForFile {
 
         if ($parsedTrackNumber -eq 0) {
             # We special case track zero to indicate 'Title'
-            $result.TrackTitle = 'Title'
+            $result.TrackTitle = "$paddedTrackNumber - Title"
         }
         else {
             # Now Get the English for this Number
             $englishNumber = Get-EnglishForNumber -Number $parsedTrackNumber
-            $result.TrackTitle = "Page $englishNumber"
+            $result.TrackTitle = "$paddedTrackNumber - Page $englishNumber"
         }
 
         # Now Generate the New File Path
-        $newFileName = "$paddedTrackNumber-$($result.TrackTitle)$([System.IO.Path]::GetExtension($Path))".Replace(' ', [string]::Empty)
+        $newFileName = "$($result.TrackTitle)$([System.IO.Path]::GetExtension($Path))".Replace(' ', [string]::Empty)
         $result.NewPath = [System.IO.Path]::Combine($([System.IO.Path]::GetDirectoryName($Path)), $newFileName)
 
         $result
     }
 }
 
-$Path = 'C:\Users\ace.olszowka\OneDrive\Mars\Audacity\Read_Books\Llama.Llama.Red.Pajama.Ann.Dewdney'
+$Path = 'C:\Users\ace.olszowka\OneDrive\Mars\Audacity\Read_Books\Llama.Llama.Red.Pajama.Anna.Dewdney'
 $Artist = 'Anna Dewdney'
 $Album = 'Llama Llama Red Pajama'
 
-Invoke-RenameFilesAndTagFLAC -Path $Path -Artist $Artist -Album $Album | Out-GridView
+Invoke-RenameFilesAndTagFLAC -Path $Path -Artist $Artist -Album $Album
