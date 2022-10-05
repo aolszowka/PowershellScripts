@@ -4,33 +4,33 @@ function Get-EnglishForNumber {
     )
     process {
         $EnglishNumbers = @{
-            1   = 'One'
-            2   = 'Two'
-            3   = 'Three'
-            4   = 'Four'
-            5   = 'Five'
-            6   = 'Six'
-            7   = 'Seven'
-            8   = 'Eight'
-            9   = 'Nine'
-            10  = 'Ten'
-            11  = 'Eleven'
-            12  = 'Twelve'
-            13  = 'Thirteen'
-            14  = 'Fourteen'
-            15  = 'Fifteen'
-            16  = 'Sixteen'
-            17  = 'Seventeen'
-            18  = 'Eighteen'
-            19  = 'Nineteen'
-            20  = 'Twenty'
-            30  = 'Thirty'
-            40  = 'Forty'
-            50  = 'Fifty'
-            60  = 'Sixty'
-            70  = 'Seventy'
-            80  = 'Eighty'
-            90  = 'Ninety'
+            1  = 'One'
+            2  = 'Two'
+            3  = 'Three'
+            4  = 'Four'
+            5  = 'Five'
+            6  = 'Six'
+            7  = 'Seven'
+            8  = 'Eight'
+            9  = 'Nine'
+            10 = 'Ten'
+            11 = 'Eleven'
+            12 = 'Twelve'
+            13 = 'Thirteen'
+            14 = 'Fourteen'
+            15 = 'Fifteen'
+            16 = 'Sixteen'
+            17 = 'Seventeen'
+            18 = 'Eighteen'
+            19 = 'Nineteen'
+            20 = 'Twenty'
+            30 = 'Thirty'
+            40 = 'Forty'
+            50 = 'Fifty'
+            60 = 'Sixty'
+            70 = 'Seventy'
+            80 = 'Eighty'
+            90 = 'Ninety'
         }
 
         $readableNumber = [System.Text.StringBuilder]::new()
@@ -79,14 +79,65 @@ function Get-EnglishForNumber {
     }
 }
 
-Get-EnglishForNumber -Number 2200
-Get-EnglishForNumber -Number 22000
-Get-EnglishForNumber -Number 2201
-Get-EnglishForNumber -Number 2221
-Get-EnglishForNumber -Number 2211
-Get-EnglishForNumber -Number 2213
-Get-EnglishForNumber -Number 11
-
-for ($i = 1; $i -lt 1025; $i++) {
-    Write-Host "$i - $(Get-EnglishForNumber -Number $i)"
+function Invoke-RenameFilesAndTagFLAC {
+    param(
+        $Path,
+        $Artist,
+        $Album
+    )
+    process {
+        $files = Get-ChildItem -Path $Path -Filter '*.flac'
+        foreach ($file in $files) {
+            Get-MetadataForFile -Path $file -Artist $Artist -Album $Album
+        }
+    }
 }
+
+function Get-MetadataForFile {
+    param(
+        $Path,
+        $Artist,
+        $Album
+    )
+    process {
+
+        $result = [PSCustomObject]@{
+            OriginalPath = $Path
+            NewPath      = [string]::Empty
+            TrackNumber  = [string]::Empty
+            TrackTitle   = [string]::Empty
+            Artist       = $Artist
+            Album        = $Album
+            Comments = "As read by Ace Olszowka"
+        }
+
+        $fileName = [System.IO.Path]::GetFileNameWithoutExtension($Path)
+        $trackNumberRegex = [System.Text.RegularExpressions.Regex]::Match($fileName, '^(?<TrackNumber>\d+)')
+        $trackNumberMatchValue = $trackNumberRegex.Groups['TrackNumber'].Value
+        $parsedTrackNumber = [int]::Parse($trackNumberMatchValue)
+        $result.TrackNumber = $parsedTrackNumber
+        $paddedTrackNumber = $result.TrackNumber.ToString().PadLeft(2, '0')
+
+        if ($parsedTrackNumber -eq 0) {
+            # We special case track zero to indicate 'Title'
+            $result.TrackTitle = 'Title'
+        }
+        else {
+            # Now Get the English for this Number
+            $englishNumber = Get-EnglishForNumber -Number $parsedTrackNumber
+            $result.TrackTitle = "Page $englishNumber"
+        }
+
+        # Now Generate the New File Path
+        $newFileName = "$paddedTrackNumber-$($result.TrackTitle)$([System.IO.Path]::GetExtension($Path))".Replace(' ', [string]::Empty)
+        $result.NewPath = [System.IO.Path]::Combine($([System.IO.Path]::GetDirectoryName($Path)), $newFileName)
+
+        $result
+    }
+}
+
+$Path = 'C:\Users\ace.olszowka\OneDrive\Mars\Audacity\Read_Books\Llama.Llama.Red.Pajama.Ann.Dewdney'
+$Artist = 'Anna Dewdney'
+$Album = 'Llama Llama Red Pajama'
+
+Invoke-RenameFilesAndTagFLAC -Path $Path -Artist $Artist -Album $Album | Out-GridView
