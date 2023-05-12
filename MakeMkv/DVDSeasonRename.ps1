@@ -1,4 +1,4 @@
-$targetFolder = 'L:\MakeMKV\DS9'
+$targetFolder = 'S:\MakeMKV\StarkTrekDS9'
 $files = Get-ChildItem -Path $targetFolder -Filter *.mkv -Recurse | Select-Object -ExpandProperty FullName | Sort-Object
 
 $episodePrefix = "Star.Trek.DS9"
@@ -38,8 +38,8 @@ foreach ($file in $files) {
 
 $uniqueFileNameCount = ($fileRenames.Values | Get-Unique | Measure-Object).Count
 
-if($fileRenames.Count -eq $uniqueFileNameCount) {
-    foreach($kvp in $fileRenames.GetEnumerator()) {
+if ($fileRenames.Count -eq $uniqueFileNameCount) {
+    foreach ($kvp in $fileRenames.GetEnumerator()) {
         # Get the Season
         $sourceFolderPath = [System.IO.Path]::GetDirectoryName($kvp.Key)
         $sourceFolder = [System.IO.Path]::GetFileNameWithoutExtension($sourceFolderPath)
@@ -47,7 +47,7 @@ if($fileRenames.Count -eq $uniqueFileNameCount) {
         $seasonInt = [System.Int32]::Parse($seasonText)
 
         $destinationFolder = [System.IO.Path]::Combine($targetFolder, "Season.$seasonInt")
-        if(-Not(Test-Path $destinationFolder)) {
+        if (-Not(Test-Path $destinationFolder)) {
             New-Item -Path $destinationFolder -ItemType Directory
         }
         $destinationFileName = [System.IO.Path]::Combine($destinationFolder, $kvp.Value)
@@ -58,7 +58,7 @@ if($fileRenames.Count -eq $uniqueFileNameCount) {
     Write-Host 'All Names Unique'
 }
 else {
-    foreach($kvp in $fileRenames.GetEnumerator()) {
+    foreach ($kvp in $fileRenames.GetEnumerator()) {
         Write-Host "$($kvp.Key) -> $($kvp.Value)"
     }
     Write-Error 'A logic error has occurred that resulted in the generation of non-unique file names; See the above listing.'
