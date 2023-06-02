@@ -1,3 +1,5 @@
+# Toy script to quickly rename MKV Files ripped by MakeMKV into S00E00 Format
+
 $targetFolder = 'S:\MakeMKV\StarkTrekDS9'
 $files = Get-ChildItem -Path $targetFolder -Filter *.mkv -Recurse | Select-Object -ExpandProperty FullName | Sort-Object
 
@@ -53,7 +55,6 @@ if ($fileRenames.Count -eq $uniqueFileNameCount) {
         $destinationFileName = [System.IO.Path]::Combine($destinationFolder, $kvp.Value)
         Write-Host "$($kvp.Key) -> $destinationFileName"
         Move-Item -Path $kvp.Key -Destination $destinationFileName
-
     }
     Write-Host 'All Names Unique'
 }
