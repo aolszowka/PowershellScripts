@@ -2,7 +2,7 @@ $targetPath = 'C:\Transcription'
 $flacPath = 'C:\DevApps\System\flac\win64\flac.exe'
 $metaflacPath = 'C:\DevApps\System\flac\win64\metaflac.exe'
 
-$wavFiles = Get-ChildItem -Path $targetPath -Filter '*.wav'
+$wavFiles = Get-ChildItem -Path $targetPath -Filter '*.wav' -Recurse
 foreach ($wavFile in $wavFiles.FullName) {
     $flacFilePath = [System.IO.Path]::Combine($([System.IO.Path]::GetDirectoryName($wavFile)), $("$([System.IO.Path]::GetFileNameWithoutExtension($wavFile)).flac"))
     # If No FLAC File Found; Compress!
@@ -19,7 +19,7 @@ foreach ($wavFile in $wavFiles.FullName) {
 }
 
 # Update FLAC Metadata As well
-$flacFiles = Get-ChildItem -Path $targetPath -Filter '*.flac'
+$flacFiles = Get-ChildItem -Path $targetPath -Filter '*.flac' -Recurse
 foreach ($flacFile in $flacFiles.FullName) {
     $metaDataPath = [System.IO.Path]::Combine($([System.IO.Path]::GetDirectoryName($flacFile)), 'metadata.txt')
     if (Test-Path $metaDataPath) {
@@ -50,7 +50,10 @@ foreach ($flacFile in $flacFiles.FullName) {
 
             # Compare the Objects
             if ((Compare-Object -ReferenceObject $metaDataObject -DifferenceObject $existingMetaDataObject -Property Artist, Title, Album).Length -ne 0) {
-                Write-Host "Metadata was different; updating!"
+                Write-Host "Meta Data Did Not Match for [$flacFile]."
+                &$metaflacPath --set-tag="ARTIST=$($metaDataObject.Artist)" "$flacFile"
+                &$metaflacPath --set-tag="TITLE=$($metaDataObject.Title)" "$flacFile"
+                &$metaflacPath --set-tag="ALBUM=$($metaDataObject.Album)" "$flacFile"
             }
         }
         else {
