@@ -51,8 +51,11 @@ foreach ($flacFile in $flacFiles.FullName) {
             # Compare the Objects
             if ((Compare-Object -ReferenceObject $metaDataObject -DifferenceObject $existingMetaDataObject -Property Artist, Title, Album).Length -ne 0) {
                 Write-Host "Meta Data Did Not Match for [$flacFile]."
+                &$metaflacPath --remove-tag="ARTIST" "$flacFile"
                 &$metaflacPath --set-tag="ARTIST=$($metaDataObject.Artist)" "$flacFile"
+                &$metaflacPath --remove-tag="TITLE" "$flacFile"
                 &$metaflacPath --set-tag="TITLE=$($metaDataObject.Title)" "$flacFile"
+                &$metaflacPath --remove-tag="ALBUM" "$flacFile"
                 &$metaflacPath --set-tag="ALBUM=$($metaDataObject.Album)" "$flacFile"
             }
         }
