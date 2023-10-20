@@ -25,12 +25,19 @@
 # usually), or contained puncuation that was not in the Wikipedia title. In
 # addition sometimes there were unprintable characters, specifically the ' used
 # some weird Unicode version that looked similar but was parsed poorly (as
-# `γçö`) much of this is error handling to support this.
+# `γçö` or `’`) much of this is error handling to support this.
 
 $sourceFiles = Import-Csv $PSScriptRoot\BadNames.csv
 $episodeTitles = Import-Csv $PSScriptRoot\DanielTigerEpisodes.csv
 
 $mkvPropEdit = 'C:\DevApps\System\mkvtoolnix\mkvpropedit.exe'
+
+# This is only required if attempting to edit MP4 metadata
+$windowsAPICodePackShellDll = "$PSScriptRoot\Microsoft.WindowsAPICodePack.Shell.dll"
+
+if (Test-Path $windowsAPICodePackShellDll) {
+    Add-Type -Path $windowsAPICodePackShellDll
+}
 
 # Have an Episode Title Lookup For When we Retitle This
 [System.Collections.Generic.Dictionary[string, string]]$episodeTitleLookup = [System.Collections.Generic.Dictionary[string, string]]::new()
@@ -61,7 +68,7 @@ $results = foreach ($sourceFile in $sourceFiles) {
 
     $matchFound = $false
     foreach ($title in $titles) {
-        $title = $title.ToLower().Trim().Replace("'", [string]::Empty).Replace("γçö", [string]::Empty)
+        $title = $title.ToLower().Trim().Replace("'", [string]::Empty).Replace("γçö", [string]::Empty).Replace("’", [string]::Empty)
         if ($lookupDictionary.ContainsKey($title)) {
             $episodeNumber = $lookupDictionary[$title]
             Write-Host "Match Found! [$($sourceFile.FileName)] Maps to [$episodeNumber]"
@@ -90,10 +97,49 @@ foreach ($renameOperation in $results) {
             Write-Error "Filename [$fileSystemSafeName] was not safe! Contains [$c] Aborting."
         }
     }
-    $newFileName = "Daniel.Tigers.Neighborhood.$($renameOperation.EpisodeNumber).$fileSystemSafeName.mkv"
+
+    $sourceFileExtension = [System.IO.Path]::GetExtension($renameOperation.FileName)
+    if ($sourceFileExtension -eq ".mkv") {
+        if (-Not(Test-Path $mkvPropEdit)) {
+            Write-Error "Unable to locake mkvpropedit at [$mkvPropEdit]. Aborting."
+        }
+    }
+    elseif ($sourceFileExtension -eq '.mp4') {
+        if (-Not(Test-Path $windowsAPICodePackShellDll)) {
+            Write-Error "Unable to locake WindowsAPICodePack.Shell at [$windowsAPICodePackShellDll]. Aborting."
+        }
+    }
+
+
+    $newFileName = "Daniel.Tigers.Neighborhood.$($renameOperation.EpisodeNumber).$fileSystemSafeName$sourceFileExtension"
     $newFileNamePath = [System.IO.Path]::Combine($([System.IO.Path]::GetDirectoryName($renameOperation.FileName)), $newFileName)
 
     $newFileNamePath
     Move-Item -Path $renameOperation.FileName -Destination $newFileNamePath
-    &$mkvPropEdit $newFileNamePath --edit info --set "title=$episodeTitle"
+    if ($sourceFileExtension -eq '.mkv') {
+        &$mkvPropEdit $newFileNamePath --edit info --set "title=$episodeTitle"
+    }
+    elseif ($sourceFileExtension -eq '.mp4') {
+        # There really doesn't seem to be a way to do this within PowerShell;
+        # See this guy [0]. I think the key is to use something like they do in
+        # C# using the Windows API Code pack [1] If you look at the underlying
+        # code[2] he'll eventually call down into IShellItem2::GetPropertyStore
+        # [3] and then call IPropertyStore::SetValue [4], however these are the
+        # C++ API's which do not appear to be exposed via COM, which means there
+        # is no straight forward way within PowerShell to accomplish this.
+        #
+        # [0]-https://stackoverflow.com/questions/65228096/powershell-changing-mp4-metadata-right-click-properties
+        # [1]-https://stackoverflow.com/questions/24040248/is-it-possible-to-set-edit-a-file-extended-properties-with-windows-api-code-pack
+        # [2]-https://github.com/aybe/Windows-API-Code-Pack-1.1/blob/master/source/WindowsAPICodePack/Shell/PropertySystem/ShellPropertyWriter.cs
+        # [3]-https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nf-shobjidl_core-ishellitem2-getpropertystore
+        # [4]-https://learn.microsoft.com/en-us/windows/win32/api/propsys/nf-propsys-ipropertystore-setvalue
+        $shellFile = [Microsoft.WindowsAPICodePack.Shell.ShellFile]::FromFilePath($newFileNamePath)
+        $propertyWriter = $shellFile.Properties.GetPropertyWriter()
+        # Ideally we'd use
+        # `Microsoft.WindowsAPICodePack.Shell.PropertySystem.SystemProperties.System.Title`
+        # but for some reason I was unable to load this static type?
+        $titlePropertyKey = [Microsoft.WindowsAPICodePack.Shell.PropertySystem.PropertyKey]::new([Guid]::new("{F29F85E0-4FF9-1068-AB91-08002B27B3D9}"), 2)
+        $propertyWriter.WriteProperty($titlePropertyKey, $episodeTitle)
+        $propertyWriter.Close()
+    }
 }
