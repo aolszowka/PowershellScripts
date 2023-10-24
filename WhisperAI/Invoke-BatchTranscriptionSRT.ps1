@@ -1,3 +1,5 @@
+$targetDirectory = 'C:\Transcription'
+
 function ConvertTo-SRT {
     param (
         [string]$SourceFile,
@@ -51,7 +53,6 @@ function Get-Duration {
     return $duration
 }
 
-$targetDirectory = 'C:\Transcription'
 $sourceFiles = Get-ChildItem -Path $targetDirectory -Filter *.flac -Recurse | Select-Object -ExpandProperty FullName
 
 foreach ($sourceFile in $sourceFiles) {
