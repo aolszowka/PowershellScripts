@@ -8,13 +8,17 @@ function Get-ItemListing {
         $TargetPath
     )
     process {
-        $fileNames = Get-ChildItem -Path $TargetPath -Recurse -Filter '*.mkv' | Select-Object -ExpandProperty FullName
+        $fileNames = Get-ChildItem -LiteralPath $TargetPath -Recurse -Filter '*.mkv' | Select-Object -ExpandProperty FullName
         # Start to build up the title based on the file naming convention
         foreach ($fileName in $fileNames) {
             $title = [System.IO.Path]::GetFileNameWithoutExtension($fileName)
             $title = $title.Replace('.', ' ')
-            $title = $title.Replace('S0', '- S0')
-            $title = "$title -"
+            $seasonEpisodeString = [System.Text.RegularExpressions.Regex]::Match($title, 'S[0-9]+E[0-9]+')
+            $title = $title.Insert($seasonEpisodeString.Index, '- ')
+            # Calculate Again to Add it After
+            $seasonEpisodeString = [System.Text.RegularExpressions.Regex]::Match($title, 'S[0-9]+E[0-9]+')
+            $title = $title.Insert($seasonEpisodeString.Index + $seasonEpisodeString.Length, ' -')
+            $title = "$title"
 
             [PSCustomObject]@{FileName = $fileName; Title = $title }
         }
