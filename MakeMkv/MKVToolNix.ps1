@@ -1,7 +1,7 @@
 # Toy Script to mass edit MKV Metadata using a CSV File
 # CSV File is expected to be in the following format:
 # FileName,Title
-$mkvPropEdit = 'C:\Program Files\MKVToolNix\mkvpropedit.exe'
+$mkvPropEdit = 'C:\DevApps\System\mkvtoolnix\mkvpropedit.exe'
 
 function Get-ItemListing {
     param(
@@ -39,6 +39,6 @@ function Invoke-MkvMetadataRewrite {
 }
 
 # You can quickly list out the files that would need to be renamed using this tool
-#Get-ItemListing -TargetPath 'S:\Encoded\The.Simpsons' | Export-Csv -Path $PSScriptRoot\Rename.csv -NoTypeInformation
+#Get-ItemListing -TargetPath 'D:\Input' | Export-Csv -Path $PSScriptRoot\Rename.csv -NoTypeInformation
 # Assumes you've edited the above CSV
-Invoke-MkvMetadataRewrite -InputCsv $PSScriptRoot\SimpsonsEpisodes.csv
+#Invoke-MkvMetadataRewrite -InputCsv $PSScriptRoot\Rename.csv
