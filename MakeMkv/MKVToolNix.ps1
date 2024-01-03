@@ -3,45 +3,104 @@
 # FileName,Title
 $mkvPropEdit = 'C:\DevApps\System\mkvtoolnix\mkvpropedit.exe'
 
+# Creates PowerShell Objects that contain a FileName and Title property
+# generated based on the file name.
 function Get-ItemListing {
     param(
-        $TargetPath
+        [Parameter(Position = 0, Mandatory = $true)]
+        [string]
+        $Path,
+        [Parameter(Position = 1, Mandatory = $false)]
+        [bool]
+        $IncludeSeasonAndEpisode = $false,
+        [Parameter(Position = 2, Mandatory = $false)]
+        [bool]
+        $IncludeSeriesName = $true
     )
     process {
-        $includeSeasonAndEpisode = $true
-        $fileNames = Get-ChildItem -LiteralPath $TargetPath -Recurse -Filter '*.mkv' | Select-Object -ExpandProperty FullName
+        # Use LiteralPath to work around bug with Get-ChildItem with paths that
+        # contain square brackets. See:
+        # https://stackoverflow.com/q/33721892/433069
+        $fileNames = Get-ChildItem -LiteralPath $Path -Recurse -Filter '*.mkv' | Select-Object -ExpandProperty FullName
+
         # Start to build up the title based on the file naming convention
         foreach ($fileName in $fileNames) {
-            $title = [System.IO.Path]::GetFileNameWithoutExtension($fileName)
-            $title = $title.Replace('.', ' ')
-            if ($includeSeasonAndEpisode -eq $true) {
-                # When a Season and Episode value are present attempt to name
-                # the file with that information in the title.
-                $seasonEpisodeString = [System.Text.RegularExpressions.Regex]::Match($title, 'S[0-9]+E[0-9]+')
-                # Add to to the end of the dash because that won't mess up the index from above
-                $title = $title.Insert($seasonEpisodeString.Index + $seasonEpisodeString.Length, ' -')
-                # Then add it before
-                $title = $title.Insert($seasonEpisodeString.Index, '- ')
-            }
-            else {
-                # We also need to support where we've got Absolute Ordering (No
-                # Season) hence the Season is optional.
-                $title = [System.Text.RegularExpressions.Regex]::Replace($title, '(S[0-9]+)?E[0-9]+', [string]::Empty)
-                $title = $title.Trim()
-                $title = $title.Trim('-')
-                # Trim Whitespace again because removing the `-` might have
-                # cleared us up.
-                $title = $title.Trim()
-            }
-            $title = "$title"
+            $fileNameWithoutExtension = [System.IO.Path]::GetFileNameWithoutExtension($fileName)
+            $title = Get-TitleFromFileName -FileName $fileNameWithoutExtension -IncludeSeriesName $IncludeSeriesName -IncludeSeasonAndEpisode $IncludeSeasonAndEpisode
 
             [PSCustomObject]@{FileName = $fileName; Title = $title }
         }
     }
 }
 
+# Extract the Title from the File Name
+function Get-TitleFromFileName {
+    param(
+        [Parameter(Position = 0, Mandatory = $true)]
+        [string]
+        $FileName,
+        [Parameter(Position = 1, Mandatory = $false)]
+        [bool]
+        $IncludeSeasonAndEpisode = $false,
+        [Parameter(Position = 2, Mandatory = $false)]
+        [bool]
+        $IncludeSeriesName = $true
+    )
+    process {
+        $sanitizedFileName = $FileName
+        if (-Not $sanitizedFileName.Contains(" ")) {
+            # If there are no spaces in the file name; assume that `.` is
+            # used as a space delimiter.
+            $sanitizedFileName = $sanitizedFileName.Replace('.', ' ')
+        }
+
+        # Support for Absolute Ordering (No Seasons)
+        # Watch out for Double Episodes!
+        $seasonEpisodeMatch = [System.Text.RegularExpressions.Regex]::Match($sanitizedFileName, '(S[0-9]+)?E[0-9]+(-E[0-9]+)?')
+        $episodeTitle = $sanitizedFileName.Substring($seasonEpisodeMatch.Index + $seasonEpisodeMatch.Length).Trim()
+
+        # Handle additional Dashes
+        while ($episodeTitle.StartsWith('-') -or $episodeTitle.EndsWith('-')) {
+            $episodeTitle = $episodeTitle.Trim('-')
+            $episodeTitle = $episodeTitle.Trim()
+        }
+
+        $constructedTitle = [string]::Empty
+        if ($IncludeSeriesName) {
+            $seriesName = $sanitizedFileName.Substring(0, $seasonEpisodeMatch.Index).Trim()
+
+            # Handle when the series name was not in the filename
+            if (-Not [string]::IsNullOrEmpty($seriesName)) {
+                $constructedTitle = $seriesName
+            }
+        }
+
+        if ($IncludeSeasonAndEpisode) {
+            if ([string]::IsNullOrEmpty($constructedTitle)) {
+                $constructedTitle = $seasonEpisodeMatch.Value
+            }
+            else {
+                $constructedTitle = "$constructedTitle - $($seasonEpisodeMatch.Value)"
+            }
+        }
+
+        if ([string]::IsNullOrEmpty($constructedTitle)) {
+            $constructedTitle = $episodeTitle
+        }
+        else {
+            $constructedTitle = "$constructedTitle - $episodeTitle"
+        }
+
+        $constructedTitle
+    }
+}
+
+# Given an Input CSV wherein the first column is `FileName` and the second
+# column is `Title` use `mkvpropedit.exe` to set the Title.
 function Invoke-MkvMetadataRewrite {
     param(
+        [Parameter(Position = 0, Mandatory = $true)]
+        [string]
         $InputCsv
     )
     process {
@@ -54,6 +113,6 @@ function Invoke-MkvMetadataRewrite {
 }
 
 # You can quickly list out the files that would need to be renamed using this tool
-#Get-ItemListing -TargetPath 'D:\Input' | Export-Csv -Path $PSScriptRoot\Rename.csv -NoTypeInformation
+#Get-ItemListing | Export-Csv -Path $PSScriptRoot\Rename.csv -NoTypeInformation
 # Assumes you've edited the above CSV
 #Invoke-MkvMetadataRewrite -InputCsv $PSScriptRoot\Rename.csv
