@@ -1,9 +1,11 @@
-$targetDirectory = 'C:\Transcription'
-
 function ConvertTo-SRT {
     param (
-        [string]$SourceFile,
-        [string]$DestinationFile = "$SourceFile.srt"
+        [Parameter( Position = 0, Mandatory = $true)]
+        [string]
+        $SourceFile,
+        [Parameter( Position = 1, Mandatory = $false)]
+        [string]
+        $DestinationFile = "$SourceFile.srt"
     )
 
     # Use an initial prompt of `Hello.` to work around around this issue:
@@ -32,10 +34,18 @@ function ConvertTo-SRT {
 
 function ConvertTo-JsonDiarize {
     param (
-        [string]$SourceFile,
-        [string]$DestinationFile = "$SourceFile.json",
-        [int]$MinSpeakers = 2,
-        [int]$MaxSpeakers = 2
+        [Parameter( Position = 0, Mandatory = $true)]
+        [string]
+        $SourceFile,
+        [Parameter( Position = 1, Mandatory = $false)]
+        [string]
+        $DestinationFile = "$SourceFile.json",
+        [Parameter( Position = 2, Mandatory = $false)]
+        [int]
+        $MinSpeakers = 2,
+        [Parameter( Position = 3, Mandatory = $false)]
+        [int]
+        $MaxSpeakers = 2
     )
 
     # Do not use an initial prompt as this does not work for WhisperX
@@ -62,7 +72,9 @@ function ConvertTo-JsonDiarize {
 
 function Get-Duration {
     param (
-        [string]$SourceFile
+        [Parameter( Position = 0, Mandatory = $true)]
+        [string]
+        $SourceFile
     )
 
     $ffprobePath = 'C:\DevApps\System\ffmpeg\bin\ffprobe.exe'
@@ -85,8 +97,12 @@ function Get-Duration {
 
 function Invoke-SRTConversion {
     param (
-        $sourceFiles
+        [Parameter( Position = 0, Mandatory = $true)]
+        [string]
+        $Path
     )
+
+    $sourceFiles = Get-ChildItem -LiteralPath $Path -Filter *.flac -Recurse | Select-Object -ExpandProperty FullName
 
     foreach ($sourceFile in $sourceFiles) {
         if (Test-Path -Path "$sourceFile.srt") {
@@ -100,8 +116,12 @@ function Invoke-SRTConversion {
 
 function Invoke-DiarizedJSONConversion {
     param (
-        $sourceFiles
+        [Parameter( Position = 0, Mandatory = $true)]
+        [string]
+        $Path
     )
+
+    $sourceFiles = Get-ChildItem -LiteralPath $Path -Filter *.flac -Recurse | Select-Object -ExpandProperty FullName
 
     foreach ($sourceFile in $sourceFiles) {
         if (Test-Path -Path "$sourceFile.json") {
@@ -114,8 +134,5 @@ function Invoke-DiarizedJSONConversion {
 }
 
 
-$sourceFiles = Get-ChildItem -Path $targetDirectory -Filter *.flac -Recurse | Select-Object -ExpandProperty FullName
-Invoke-SRTConversion -sourceFiles $sourceFiles
-
-#$sourceFiles = Get-ChildItem -Path 'C:\TranscriptionDiarized' -Recurse -Filter *.flac | Select-Object -ExpandProperty FullName
-#Invoke-DiarizedJSONConversion -sourceFiles $sourceFiles
+Invoke-SRTConversion
+#Invoke-DiarizedJSONConversion
