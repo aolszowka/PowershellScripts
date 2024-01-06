@@ -20,19 +20,7 @@ function Invoke-SeasonEpisodeNaming {
         if (Test-Path $Path) {
             $filesInFolder = Get-ChildItem -LiteralPath $Path | Sort-Object -Property Name | Select-Object -ExpandProperty FullName
 
-            # We need to sort this by the Title
-            [System.Collections.Generic.SortedDictionary[string, string]]$titleSort = [System.Collections.Generic.SortedDictionary[string, string]]::new()
-            foreach ($file in $filesInFolder) {
-                $fileNameWithoutExtension = [System.IO.Path]::GetFileNameWithoutExtension($file)
-                $title = [System.Text.RegularExpressions.Regex]::Match($fileNameWithoutExtension, '[A-Z][0-9]_t(?<TitleNumber>[0-9]+)').Groups['TitleNumber'].Value
-                if ($titleSort.ContainsKey($title)) {
-                    Write-Error "Duplicate Titles Found; This Tool Cannot Be Used"
-                    exit
-                }
-                else {
-                    $titleSort.Add($title, $file)
-                }
-            }
+            $titleSort = Sort-ByTitle -Files $filesInFolder
 
             $currentEpisode = [int]::Parse($StartEpisode)
 
@@ -53,6 +41,37 @@ function Invoke-SeasonEpisodeNaming {
             $newPath = [System.IO.Path]::Combine($parentFolder, $newFolderName)
             Move-Item -LiteralPath $Path -Destination $newPath
         }
+    }
+}
+
+# A List of files that contains an MakeMKV Rip with files the format A1_T09.mkv
+# / C1_T09.mkv return a sorted dictionary that contains the files in title
+# order.
+function Sort-ByTitle {
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 0, Mandatory = $true)]
+        [string[]]
+        $Files
+    )
+
+    process {
+        # We need to sort this by the Title
+        [System.Collections.Generic.SortedDictionary[int, string]]$titleSort = [System.Collections.Generic.SortedDictionary[int, string]]::new()
+        foreach ($file in $Files) {
+            $fileNameWithoutExtension = [System.IO.Path]::GetFileNameWithoutExtension($file)
+            $titleString = [System.Text.RegularExpressions.Regex]::Match($fileNameWithoutExtension, '[A-Z][0-9]_t(?<TitleNumber>[0-9]+)').Groups['TitleNumber'].Value
+            $title = [int]::Parse($titleString)
+            if ($titleSort.ContainsKey($title)) {
+                Write-Error "Duplicate Titles Found ([$title]); This Tool Cannot Be Used"
+                exit
+            }
+            else {
+                $titleSort.Add($title, $file)
+            }
+        }
+
+        $titleSort
     }
 }
 
