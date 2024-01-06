@@ -22,17 +22,10 @@ function Invoke-SeasonEpisodeNaming {
 
             $titleSort = Sort-ByTitle -Files $filesInFolder
 
-            $currentEpisode = [int]::Parse($StartEpisode)
+            $renameOperations = Get-RenameOperations -TitleOrder $titleSort -Season $Season -StartEpisode $StartEpisode
 
-            # Rename all the files in S00E00 Format
-            foreach ($fileKvp in $titleSort.GetEnumerator()) {
-                $file = $fileKvp.Value
-                $parentFolder = [System.IO.Path]::GetDirectoryName($file)
-                $fileExtension = [System.IO.Path]::GetExtension($file)
-                $newName = "S$($Season.PadLeft(2,'0'))E$($currentEpisode.ToString().PadLeft(2,'0'))$fileExtension"
-                $newPath = [System.IO.Path]::Combine($parentFolder, $newName)
-                Move-Item -LiteralPath $file -Destination $newPath
-                $currentEpisode++
+            foreach ($renameOperation in $renameOperations.GetEnumerator()) {
+                Move-Item -LiteralPath $renameOperation.Key -Destination $renameOperation.Value
             }
 
             # Now Move the Folder
@@ -72,6 +65,42 @@ function Sort-ByTitle {
         }
 
         $titleSort
+    }
+}
+
+# Given a sorted dictionary that indicates the order in which the files should
+# be renamed, return a dictionary that contains the old file name along with the
+# newly generated name in S00E00 format.
+function Get-RenameOperations {
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 0, Mandatory = $true)]
+        [System.Collections.Generic.SortedDictionary[int, string]]
+        $TitleOrder,
+        [Parameter(Position = 1, Mandatory = $true)]
+        [string]
+        $Season,
+        [Parameter(Position = 2, Mandatory = $true)]
+        [string]
+        $StartEpisode
+    )
+    process {
+        [System.Collections.Generic.Dictionary[string, string]]$renameOperations = [System.Collections.Generic.Dictionary[string, string]]::new()
+
+        $currentEpisode = [int]::Parse($StartEpisode)
+
+        # Rename all the files in S00E00 Format
+        foreach ($fileKvp in $TitleOrder.GetEnumerator()) {
+            $file = $fileKvp.Value
+            $parentFolder = [System.IO.Path]::GetDirectoryName($file)
+            $fileExtension = [System.IO.Path]::GetExtension($file)
+            $newName = "S$($Season.PadLeft(2,'0'))E$($currentEpisode.ToString().PadLeft(2,'0'))$fileExtension"
+            $newPath = [System.IO.Path]::Combine($parentFolder, $newName)
+            $renameOperations.Add($file, $newPath)
+            $currentEpisode++
+        }
+
+        $renameOperations
     }
 }
 
