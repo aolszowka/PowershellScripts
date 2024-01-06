@@ -14,7 +14,10 @@ function Invoke-SeasonEpisodeNaming {
         $Season,
         [Parameter(Position = 2, Mandatory = $true)]
         [string]
-        $StartEpisode
+        $StartEpisode,
+        [Parameter(Position = 3, Mandatory = $false)]
+        [bool]
+        $TreatAsDoubleEpisode = $false
     )
     process {
         if (Test-Path $Path) {
@@ -22,7 +25,7 @@ function Invoke-SeasonEpisodeNaming {
 
             $titleSort = Sort-ByTitle -Files $filesInFolder
 
-            $renameOperations = Get-RenameOperations -TitleOrder $titleSort -Season $Season -StartEpisode $StartEpisode
+            $renameOperations = Get-RenameOperations -TitleOrder $titleSort -Season $Season -StartEpisode $StartEpisode -TreatAsDoubleEpisode $TreatAsDoubleEpisode
 
             foreach ($renameOperation in $renameOperations.GetEnumerator()) {
                 Move-Item -LiteralPath $renameOperation.Key -Destination $renameOperation.Value
@@ -82,7 +85,10 @@ function Get-RenameOperations {
         $Season,
         [Parameter(Position = 2, Mandatory = $true)]
         [string]
-        $StartEpisode
+        $StartEpisode,
+        [Parameter(Position = 3, Mandatory = $false)]
+        [bool]
+        $TreatAsDoubleEpisode = $false
     )
     process {
         [System.Collections.Generic.Dictionary[string, string]]$renameOperations = [System.Collections.Generic.Dictionary[string, string]]::new()
@@ -94,7 +100,14 @@ function Get-RenameOperations {
             $file = $fileKvp.Value
             $parentFolder = [System.IO.Path]::GetDirectoryName($file)
             $fileExtension = [System.IO.Path]::GetExtension($file)
-            $newName = "S$($Season.PadLeft(2,'0'))E$($currentEpisode.ToString().PadLeft(2,'0'))$fileExtension"
+            if ($TreatAsDoubleEpisode) {
+                $firstEpisode = $currentEpisode
+                $currentEpisode++
+                $newName = "S$($Season.PadLeft(2,'0'))E$($firstEpisode.ToString().PadLeft(2,'0'))E$($currentEpisode.ToString().PadLeft(2,'0'))$fileExtension"
+            }
+            else {
+                $newName = "S$($Season.PadLeft(2,'0'))E$($currentEpisode.ToString().PadLeft(2,'0'))$fileExtension"
+            }
             $newPath = [System.IO.Path]::Combine($parentFolder, $newName)
             $renameOperations.Add($file, $newPath)
             $currentEpisode++
