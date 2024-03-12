@@ -18,6 +18,21 @@ Describe 'Sort-ByTitle' {
         $actual.Keys | Should -Be @(8, 9, 10)
         $actual.Values | Should -Be @('T:\S1D1\D1_t8.mkv', 'T:\S1D1\C1_t9.mkv', 'T:\S1D1\A1_t10.mkv')
     }
+
+    It 'Should Support Full File Names' {
+        # Arrange
+        $files = @(
+            'T:\S1D1\Some Title_t01',
+            'T:\S1D1\SomeTitle_t02'
+        )
+
+        # Act
+        $actual = Sort-ByTitle -Files $files
+
+        # Assert
+        $actual.Keys | Should -Be @(1, 2)
+        $actual.Values | Should -Be @('T:\S1D1\Some Title_t01', 'T:\S1D1\SomeTitle_t02')
+    }
 }
 
 Describe 'Get-RenameOperations' {
