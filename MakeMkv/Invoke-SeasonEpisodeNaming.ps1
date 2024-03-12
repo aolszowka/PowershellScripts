@@ -56,7 +56,7 @@ function Sort-ByTitle {
         [System.Collections.Generic.SortedDictionary[int, string]]$titleSort = [System.Collections.Generic.SortedDictionary[int, string]]::new()
         foreach ($file in $Files) {
             $fileNameWithoutExtension = [System.IO.Path]::GetFileNameWithoutExtension($file)
-            $titleString = [System.Text.RegularExpressions.Regex]::Match($fileNameWithoutExtension, '[A-Z][0-9]_t(?<TitleNumber>[0-9]+)').Groups['TitleNumber'].Value
+            $titleString = [System.Text.RegularExpressions.Regex]::Match($fileNameWithoutExtension, '(^[A-Z][0-9]|[A-Za-z\)])_t(?<TitleNumber>[0-9]+)').Groups['TitleNumber'].Value
             $title = [int]::Parse($titleString)
             if ($titleSort.ContainsKey($title)) {
                 Write-Error "Duplicate Titles Found ([$title]); This Tool Cannot Be Used"
