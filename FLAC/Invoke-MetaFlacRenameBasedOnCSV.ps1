@@ -1,5 +1,5 @@
-# This toy script was created to help perform mass renaming of files based on an
-# excel spreadsheet.
+# This toy script was created to help perform mass renaming of files based on a
+# CSV
 function Invoke-MetaFlacRenameBasedOnCSV {
     [CmdletBinding()]
     param (
