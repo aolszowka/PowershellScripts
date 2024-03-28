@@ -118,6 +118,3 @@ function Get-SafeFileNameFromCSVEntry {
         $fileSystemSafePath
     }
 }
-
-
-Invoke-M4ARenameBasedOnCSV -CSVFile "E:\BedtimeStories\Extracted\LookupTable.csv"
