@@ -23,15 +23,33 @@ Describe 'Sort-ByTitle' {
         # Arrange
         $files = @(
             'T:\S1D1\Some Title_t01',
-            'T:\S1D1\SomeTitle_t02'
+            'T:\S1D1\SomeTitle_t02',
+            'T:\S1D1\Some Title 1_t03',
+            'T:\S1D1\Some Title 2_t04',
+            'T:\S1D1\Some Title3_t05',
+            'T:\S1D1\Some Title (2005)_t06'
         )
 
         # Act
         $actual = Sort-ByTitle -Files $files
 
         # Assert
-        $actual.Keys | Should -Be @(1, 2)
-        $actual.Values | Should -Be @('T:\S1D1\Some Title_t01', 'T:\S1D1\SomeTitle_t02')
+        $actual.Keys | Should -Be @(
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+        )
+        $actual.Values | Should -Be @(
+            'T:\S1D1\Some Title_t01',
+            'T:\S1D1\SomeTitle_t02',
+            'T:\S1D1\Some Title 1_t03',
+            'T:\S1D1\Some Title 2_t04',
+            'T:\S1D1\Some Title3_t05',
+            'T:\S1D1\Some Title (2005)_t06'
+        )
     }
 }
 
