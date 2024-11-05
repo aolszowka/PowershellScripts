@@ -6,9 +6,9 @@
 # I was not smart enough to figure out how to get FileBot to work as expected
 # but renaming the files like the above helped FileBot figure it out.
 
-$files = Get-ChildItem -Path 'E:\Arthur\Season.7' | Sort-Object -Property FullName
+$files = Get-ChildItem -Path 'E:\Arthur\Season.8' | Sort-Object -Property FullName
 
-[int]$nextEpisode = 10
+[int]$nextEpisode = 1
 
 foreach ($file in $files) {
     # Format with a padded 0, FileBot seems to get confused otherwise.
