@@ -2,6 +2,7 @@
 # CSV File is expected to be in the following format:
 # FileName,Title
 $mkvPropEdit = 'C:\DevApps\System\mkvtoolnix\mkvpropedit.exe'
+$mkvMerge = 'C:\DevApps\System\mkvtoolnix\mkvmerge.exe'
 
 # Creates PowerShell Objects that contain a FileName and Title property
 # generated based on the file name.
@@ -95,6 +96,47 @@ function Get-TitleFromFileName {
     }
 }
 
+function Get-MkvTitles {
+    param(
+        [Parameter(Position = 0, Mandatory = $true)]
+        [string]
+        $Path
+    )
+    process {
+        # Use LiteralPath to work around bug with Get-ChildItem with paths that
+        # contain square brackets. See:
+        # https://stackoverflow.com/q/33721892/433069
+        $fileNames = Get-ChildItem -LiteralPath $Path -Recurse -Filter '*.mkv' | Select-Object -ExpandProperty FullName
+
+        # Get the MKV Title (if it exists; otherwise this will be blank)
+        foreach ($fileName in $fileNames) {
+            $mkvProperties = &$mkvMerge --identification-format json --identify "$fileName" | ConvertFrom-Json
+            [PSCustomObject]@{
+                FileName = $fileName
+                Title    = $mkvProperties.container.properties.title
+            }
+        }
+    }
+}
+
+function Remove-MkvTitles {
+    param(
+        [Parameter(Position = 0, Mandatory = $true)]
+        [string]
+        $Path
+    )
+    process {
+        # Use LiteralPath to work around bug with Get-ChildItem with paths that
+        # contain square brackets. See:
+        # https://stackoverflow.com/q/33721892/433069
+        $fileNames = Get-ChildItem -LiteralPath $Path -Recurse -Filter '*.mkv' | Select-Object -ExpandProperty FullName
+
+        foreach ($fileName in $fileNames) {
+            &$mkvPropEdit $fileName --delete title
+        }
+    }
+}
+
 # Given an Input CSV wherein the first column is `FileName` and the second
 # column is `Title` use `mkvpropedit.exe` to set the Title.
 function Invoke-MkvMetadataRewrite {
@@ -116,3 +158,7 @@ function Invoke-MkvMetadataRewrite {
 #Get-ItemListing | Export-Csv -Path $PSScriptRoot\Rename.csv -NoTypeInformation
 # Assumes you've edited the above CSV
 #Invoke-MkvMetadataRewrite -InputCsv $PSScriptRoot\Rename.csv
+
+# Other Utilities
+#Get-MkvTitles | Export-Csv -Path $PSScriptRoot\ExistingTitles.csv
+#Remove-MkvTitles
