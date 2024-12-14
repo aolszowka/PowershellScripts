@@ -156,7 +156,9 @@ function Invoke-MkvMetadataRewrite {
 
 # You can quickly list out the files that would need to be renamed using this tool
 #Get-ItemListing | Export-Csv -Path $PSScriptRoot\Rename.csv -NoTypeInformation
-#Get-MkvTitles | Export-Csv -Path $PSScriptRoot\ExistingTitles.csv
-#Remove-MkvTitles
 # Assumes you've edited the above CSV
 #Invoke-MkvMetadataRewrite -InputCsv $PSScriptRoot\Rename.csv
+
+# Other Utilities
+#Get-MkvTitles | Export-Csv -Path $PSScriptRoot\ExistingTitles.csv
+#Remove-MkvTitles
