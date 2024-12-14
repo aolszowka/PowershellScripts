@@ -55,6 +55,12 @@ function Get-TitleFromFileName {
             $sanitizedFileName = $sanitizedFileName.Replace('.', ' ')
         }
 
+        # Remove the IMDB Tags and anything after it
+        $imdbIndex = $sanitizedFileName.IndexOf('[imdb')
+        if ( $imdbIndex -gt 0) {
+            $sanitizedFileName = $sanitizedFileName.Substring(0, $imdbIndex).Trim()
+        }
+
         # Support for Absolute Ordering (No Seasons)
         # Watch out for Double Episodes!
         $seasonEpisodeMatch = [System.Text.RegularExpressions.Regex]::Match($sanitizedFileName, '(S[0-9]+)?E[0-9]+(-E[0-9]+)?')
