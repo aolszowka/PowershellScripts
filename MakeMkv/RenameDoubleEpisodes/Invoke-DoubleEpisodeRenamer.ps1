@@ -20,7 +20,7 @@ foreach ($file in $files) {
     $currentSeasonEpisodeString = ([Regex]::Match($file.Name, '^\d+x\d+(-\d+)?')).Value
 
     # Fail Safely
-    if ($null -eq $currentSeasonEpisodeString) {
+    if ([string]::IsNullOrEmpty($currentSeasonEpisodeString)) {
         throw 'This tool cannot continue'
     }
     # We want to save the Season Information
