@@ -4,7 +4,10 @@
 #
 # I was not smart enough to figure out how to get FileBot to work as expected
 # but renaming the files like the above helped FileBot figure it out.
-
+#
+# 2025/03 AKO - This is no longer needed as FileBot has the ability within the
+# episode dialog to select multiple episodes, right click, then select
+# "double/triple/multi" episodes which resolves this issue.
 [CmdletBinding()]
 param (
     [Parameter(Mandatory = $true)]
