@@ -127,3 +127,30 @@ function Get-ScreenshotOfEntireWindow {
     }
 }
 
+function Get-WAVFormsForAllFLACFiles {
+    param(
+        [Parameter(Mandatory = $true)]
+        $Path
+    )
+
+    process {
+        $allFLACFiles = Get-ChildItem -LiteralPath $Path -Filter '*.flac' -Recurse
+
+        # Start the process up and give it a few moments to load
+        $process = Start-Process -FilePath "C:\DevApps\System\audacity-win-3.4.2-64bit\Audacity.exe" -PassThru
+        Start-Sleep 10
+
+        foreach ($flacFile in $allFLACFiles) {
+            $flacFile = $flacFile.FullName
+            Invoke-AudacityCommand -Command "Import2: Filename=""$flacFile""" | Out-Null
+            Invoke-AudacityCommand -Command "FitInWindow:" | Out-Null
+            Start-Sleep 5
+            Get-ScreenshotOfEntireWindow -Process $process -FileName "$flacFile.png"
+            Invoke-AudacityCommand -Command "SelectTracks: Track=0 TrackCount=100 Mode=Set" | Out-Null
+            Invoke-AudacityCommand -Command "RemoveTracks:" | Out-Null
+        }
+    }
+}
+
+
+Get-WAVFormsForAllFLACFiles
