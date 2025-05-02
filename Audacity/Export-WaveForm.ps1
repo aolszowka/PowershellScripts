@@ -70,6 +70,60 @@ function Invoke-AudacityCommand {
     }
 }
 
-Invoke-AudacityCommand -Command "Message: Text=""Hello World!"""
-#$result = Invoke-AudacityCommand -Command "Message: Text=""Good Bye World!"""
-#$result2 = Invoke-AudacityCommand -Command "Help:"
+function Get-WindowPositionFromHandle {
+    param(
+        [System.IntPtr]
+        $MainWindowHandle
+    )
+    begin {
+        Add-Type @"
+          using System;
+          using System.Runtime.InteropServices;
+          public class Window {
+            [DllImport("user32.dll")]
+            [return: MarshalAs(UnmanagedType.Bool)]
+            public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+          }
+          public struct RECT
+          {
+            public int Left;        // x position of upper-left corner
+            public int Top;         // y position of upper-left corner
+            public int Right;       // x position of lower-right corner
+            public int Bottom;      // y position of lower-right corner
+          }
+"@
+    }
+    process {
+        $Rectangle = [RECT]::new()
+        [Window]::GetWindowRect($MainWindowHandle, [ref]$Rectangle)
+        if ($Rectangle.Top -lt 0 -AND $Rectangle.Left -lt 0) {
+            Write-Warning "Window is minimized! Coordinates will not be accurate."
+        }
+        $Rectangle
+    }
+}
+
+function Get-ScreenshotOfEntireWindow {
+    param(
+        [System.Diagnostics.Process]
+        $Process,
+        [string]
+        $FileName
+    )
+    process {
+        Add-Type -AssemblyName System.Drawing
+
+        $rectangle = Get-WindowPositionFromHandle -MainWindowHandle $process.MainWindowHandle
+        $bounds = [Drawing.Rectangle]::FromLTRB($rectangle.left, $rectangle.top, $rectangle.right, $rectangle.bottom)
+        $bmp = [System.Drawing.Bitmap]::new([int]$bounds.width, [int]$bounds.height)
+        $graphics = [Drawing.Graphics]::FromImage($bmp)
+
+        $graphics.CopyFromScreen($bounds.Location, [Drawing.Point]::Empty, $bounds.size)
+
+        $bmp.Save($FileName)
+
+        $graphics.Dispose()
+        $bmp.Dispose()
+    }
+}
+
