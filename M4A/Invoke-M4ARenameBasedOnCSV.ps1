@@ -19,7 +19,7 @@ function Invoke-M4ARenameBasedOnCSV {
         $CSVFile
     )
     begin {
-        # This is only required if attempting to edit MP4 metadata
+        # This is only required if attempting to edit M4A metadata
         $windowsAPICodePackShellDll = "$PSScriptRoot\Microsoft.WindowsAPICodePack.Shell.dll"
 
         if (Test-Path $windowsAPICodePackShellDll) {
