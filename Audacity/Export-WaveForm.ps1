@@ -137,7 +137,7 @@ function Get-WAVFormsForAllFLACFiles {
         $allFLACFiles = Get-ChildItem -LiteralPath $Path -Filter '*.flac' -Recurse
 
         # Start the process up and give it a few moments to load
-        $process = Start-Process -FilePath "C:\DevApps\System\audacity-win-3.4.2-64bit\Audacity.exe" -PassThru
+        $process = Start-Process -FilePath 'C:\DevApps\System\audacity-win-3.4.2-64bit\Audacity.exe' -PassThru
         Start-Sleep 10
 
         foreach ($flacFile in $allFLACFiles) {
