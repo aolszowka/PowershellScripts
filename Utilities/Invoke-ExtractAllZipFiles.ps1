@@ -1,7 +1,7 @@
 # Script to extract all Zip Files to the specified directory; currently we are
 # set to "Skip" any files that might be overwritten.
 
-$7zLocation = "C:\DevApps\System\7za\7za.exe"
+$7zLocation = 'C:\DevApps\System\7za\7za.exe'
 
 function Invoke-ExtractAllZipFiles {
     param (

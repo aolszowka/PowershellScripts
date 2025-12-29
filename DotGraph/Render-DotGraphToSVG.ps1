@@ -26,8 +26,7 @@ param
     [Parameter(Mandatory = $true, ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true, Position = 0)]
     [ValidateScript(
         {
-            if (-Not(Test-Path($_)))
-            {
+            if (-Not(Test-Path($_))) {
                 throw [System.ArgumentException] "The specified Dotgraph '$_' does not exist; are you sure you typed the path correctly?"
             }
             $true
@@ -39,21 +38,19 @@ param
     [Parameter(Mandatory = $false)]
     [ValidateScript(
         {
-            if (-Not(Test-Path($_)) -Or -Not($_.EndsWith("dot.exe", "InvariantCultureIgnoreCase") ))
-            {
+            if (-Not(Test-Path($_)) -Or -Not($_.EndsWith("dot.exe", "InvariantCultureIgnoreCase") )) {
                 throw [System.ArgumentException] "Dot.exe was not found at '$_'; are you sure you gave the right tool path?"
             }
             $true
         }
     )]
     [string]
-    $ToolPath = "C:\Program Files (x86)\Graphviz2.38\bin\dot.exe"
+    $ToolPath = 'C:\Program Files (x86)\Graphviz2.38\bin\dot.exe'
 )
 
 # We need to check again because it is possible that the user was attempting to
 # use the default instead of specifying the path.
-if (-Not(Test-Path($ToolPath)))
-{
+if (-Not(Test-Path($ToolPath))) {
     Write-Error -Message "Dot.exe was not found at '$_' are you sure GraphViz is installed? You can override the default location by specifying -ToolPath"
     Exit 9009
 }
@@ -61,16 +58,14 @@ if (-Not(Test-Path($ToolPath)))
 # If the user did not specify an output path then we'll generate one
 # by creating the output file right next to the dotgraph but with the
 # .svg extension
-if([string]::IsNullOrEmpty($OutputPath))
-{
+if ([string]::IsNullOrEmpty($OutputPath)) {
     $OutputPath = [System.IO.Path]::ChangeExtension($DotGraph, ".svg")
 }
 
 # If the save location does not exist create the subfolders
 $folderPath = [System.IO.Path]::GetDirectoryName($OutputPath)
 New-Item -ItemType Directory -Path $folderPath -Force | Out-Null
-if (-Not(Test-Path -Path $folderPath))
-{
+if (-Not(Test-Path -Path $folderPath)) {
     Write-Error -Message "The output folder path '$folderPath' did not exist and could not be created; do you have write permissions?"
     Exit 9009
 }
@@ -80,8 +75,7 @@ $command = "& ""$ToolPath"" -Tsvg ""$DotGraph"" -o ""$OutputPath"""
 Invoke-Expression $command
 
 # See if we got a non-zero exit code; if so we need to alert the end user
-if ($LASTEXITCODE -ne 0)
-{
+if ($LASTEXITCODE -ne 0) {
     Write-Error -Message "Dot.exe exited with a non-zero exit code; this was the command '$command'"
     exit $LASTEXITCODE
 }

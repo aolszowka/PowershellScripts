@@ -46,7 +46,7 @@
 # [5]:https://learn.microsoft.com/en-us/windows/win32/api/propsys/nf-propsys-ipropertystore-setvalue
 # [6]:https://stackoverflow.com/questions/55463067/is-it-possible-to-get-shell-properties-for-an-item-not-in-the-shell-namespace
 
-$targetFile = "C:\Transcription\Sample.mp4"
+$targetFile = 'C:\Transcription\Sample.mp4'
 
 # Requires both the `Microsoft.WindowsAPICodePack.Shell.dll` and its dependency
 # `Microsoft.WindowsAPICodePack.dll` pulled from the NuGet Packages:

@@ -4,7 +4,7 @@
 param(
     [Parameter(Mandatory = $true)]
     [string]$InputDirectory,
-    [string]$MkvMergePath = "C:\DevApps\System\mkvtoolnix\mkvmerge.exe"
+    [string]$MkvMergePath = 'C:\DevApps\System\mkvtoolnix\mkvmerge.exe'
 )
 
 # Normalize directory path
