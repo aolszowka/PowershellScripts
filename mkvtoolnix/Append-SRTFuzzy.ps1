@@ -1,3 +1,14 @@
+# Appends an existing SRT file by searching a `subs` folder expected to exist as
+# a subdirectory looking for a file that matches the criteria `S\d{2}E\d{2}` and
+# ending in `.en.srt` to an existing MKV file.
+#
+# The match criteria is displayed prior to execution, with the merge only
+# occurring when there is only a single SRT found for the file.
+#
+# Successful operations move the original MKV and SRT file in to a `_Completed`
+# folder.
+#
+# Written with the assistance of Copilot.
 param(
     [Parameter(Mandatory = $true)]
     [string]$Directory,
