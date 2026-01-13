@@ -1,5 +1,5 @@
 # Appends an existing SRT file (in the form `basefile.en.srt`) to an existing
-# MKV file and then moves the file into a `_Completed` folder.
+# MKV file and then moves the files into a `_Completed` folder.
 #
 # Written with the assistance of Copilot.
 param(

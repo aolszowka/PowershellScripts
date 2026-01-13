@@ -5,7 +5,7 @@
 # The match criteria is displayed prior to execution, with the merge only
 # occurring when there is only a single SRT found for the file.
 #
-# Successful operations move the original MKV and SRT file in to a `_Completed`
+# Successful operations move the original MKV and SRT file into a `_Completed`
 # folder.
 #
 # Written with the assistance of Copilot.
