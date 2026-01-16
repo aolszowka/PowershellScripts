@@ -45,6 +45,18 @@ foreach ($mp4 in $mp4Files) {
 
     if ($LASTEXITCODE -eq 0) {
         Write-Host "Successfully created: $outputMkv"
+
+        # Create _Completed folder if needed
+        $completedDir = Join-Path $dir "_Completed"
+        if (-not (Test-Path $completedDir)) {
+            New-Item -ItemType Directory -Path $completedDir | Out-Null
+        }
+
+        # Move original files
+        Move-Item -LiteralPath $mp4.FullName -Destination $completedDir
+        Move-Item -LiteralPath $srtPath -Destination $completedDir
+
+        Write-Host "Moved source files to: $completedDir"
     }
     else {
         Write-Error "mkvmerge failed for: $baseName"
