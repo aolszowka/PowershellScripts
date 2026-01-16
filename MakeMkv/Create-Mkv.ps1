@@ -4,7 +4,8 @@
 param(
     [Parameter(Mandatory = $true)]
     [string]$InputDirectory,
-    [string]$MkvMergePath = 'C:\DevApps\System\mkvtoolnix\mkvmerge.exe'
+    [string]$MkvMergePath = 'C:\DevApps\System\mkvtoolnix\mkvmerge.exe',
+    [switch]$Recurse
 )
 
 # Normalize directory path
@@ -12,20 +13,21 @@ $InputDirectory = (Resolve-Path $InputDirectory).Path
 
 Write-Host "Scanning directory: $InputDirectory"
 
-# Find all MP4 files
-$mp4Files = Get-ChildItem -LiteralPath $InputDirectory -Filter *.mp4
+# Find all MP4 files (with optional recursion)
+$mp4Files = Get-ChildItem -LiteralPath $InputDirectory -Filter *.mp4 -File -Recurse:$Recurse
 
 foreach ($mp4 in $mp4Files) {
 
+    $dir = $mp4.DirectoryName
     $baseName = [System.IO.Path]::GetFileNameWithoutExtension($mp4.Name)
-    $srtPath = Join-Path $InputDirectory "$baseName.srt"
+    $srtPath = Join-Path $dir "$baseName.srt"
 
     if (-Not (Test-Path $srtPath)) {
-        Write-Warning "No SRT found for: $($mp4.Name)"
+        Write-Warning "No SRT found for: $($mp4.FullName)"
         continue
     }
 
-    $outputMkv = Join-Path $InputDirectory "$baseName.mkv"
+    $outputMkv = Join-Path $dir "$baseName.mkv"
 
     Write-Host "Creating MKV for: $baseName"
 
@@ -43,6 +45,18 @@ foreach ($mp4 in $mp4Files) {
 
     if ($LASTEXITCODE -eq 0) {
         Write-Host "Successfully created: $outputMkv"
+
+        # Create _Completed folder if needed
+        $completedDir = Join-Path $dir "_Completed"
+        if (-not (Test-Path $completedDir)) {
+            New-Item -ItemType Directory -Path $completedDir | Out-Null
+        }
+
+        # Move original files
+        Move-Item -LiteralPath $mp4.FullName -Destination $completedDir
+        Move-Item -LiteralPath $srtPath -Destination $completedDir
+
+        Write-Host "Moved source files to: $completedDir"
     }
     else {
         Write-Error "mkvmerge failed for: $baseName"
