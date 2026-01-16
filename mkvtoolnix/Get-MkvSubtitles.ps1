@@ -1,3 +1,7 @@
+# Given a working directory, scan recursively for MKV files and determine if
+# they have Subtitles associated with them.
+#
+# Written with the assistance of Copilot
 param(
     [Parameter(Mandatory = $true)]
     [string]$Path,
