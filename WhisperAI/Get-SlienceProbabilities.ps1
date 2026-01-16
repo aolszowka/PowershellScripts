@@ -1,8 +1,7 @@
 # Script to detect mostly‑silent WAV files using fast C#‑based RMS analysis.
 #
 # Written with the assistance of Copilot.
-
-Add-Type -Language CSharp -TypeDefinition @"
+$WavAnalyzerCSharp = @"
 /*
    High‑performance WAV silence analyzer.
 
@@ -158,6 +157,8 @@ public static class WavSilenceAnalyzer
 }
 "@
 
+Add-Type -Language CSharp -TypeDefinition $WavAnalyzerCSharp
+
 function Get-WavSilenceStats {
     param(
         [Parameter(Mandatory = $true)]
@@ -277,4 +278,57 @@ function Get-AudioSilenceReport {
             }
         }
     }
+}
+
+function Get-AudioSilenceReportParallel {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+        # RMS threshold for silence (normalized 0–1)
+        [double]$SilenceThreshold = 0.01,
+        # Percentage threshold for classifying a file as "silent"
+        [double]$PercentThreshold = 90,
+        [int]$ThrottleLimit = [System.Environment]::ProcessorCount
+    )
+
+    $audioFiles = Get-ChildItem -Path $Path -Recurse -File |
+    Where-Object { $_.Extension -in ".wav", ".flac" }
+
+    # Capture function source text (preserves signatures)
+    $wavFuncText = ${function:Get-WavSilenceStats}.Ast.Extent.Text
+    $flacFuncText = ${function:Get-FlacSilenceStats}.Ast.Extent.Text
+
+    $audioFiles | ForEach-Object -Parallel {
+
+        # Load C# type only if not already present in this runspace
+        if (-not ('WavSilenceAnalyzer' -as [type])) {
+            Add-Type -Language CSharp -TypeDefinition $using:WavAnalyzerCSharp
+        }
+
+        # Rehydrate functions
+        Invoke-Expression $using:wavFuncText
+        Invoke-Expression $using:flacFuncText
+
+        try {
+            if ($_.Extension -eq ".wav") {
+                Get-WavSilenceStats -FilePath $_.FullName `
+                    -SilenceThreshold $using:SilenceThreshold `
+                    -PercentThreshold $using:PercentThreshold
+            }
+            else {
+                Get-FlacSilenceStats -FilePath $_.FullName `
+                    -SilenceThreshold $using:SilenceThreshold `
+                    -PercentThreshold $using:PercentThreshold
+            }
+        }
+        catch {
+            [PSCustomObject]@{
+                File              = $_.FullName
+                PercentSilent     = 0
+                IsSilentThreshold = $false
+                Error             = $_.Exception.Message
+            }
+        }
+
+    } -ThrottleLimit $ThrottleLimit
 }
