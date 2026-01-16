@@ -177,7 +177,72 @@ function Get-WavSilenceStats {
     }
 }
 
-function Get-WavSilenceReport {
+function Get-FlacSilenceStats {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$FilePath,
+        # RMS threshold for silence (normalized 0–1)
+        [double]$SilenceThreshold = 0.01,
+        # Percentage threshold for classifying a file as "silent"
+        [double]$PercentThreshold = 90,
+        [string]$flacPath = 'C:\DevApps\System\flac\win64\flac.exe',
+        [switch]$DebugFlac
+    )
+
+    if (-not (Test-Path $FilePath)) {
+        throw "FLAC file not found: $FilePath"
+    }
+
+    # Build a safe temporary WAV path
+    $base = [System.IO.Path]::GetFileNameWithoutExtension($FilePath)
+    $dir = [System.IO.Path]::GetDirectoryName($FilePath)
+
+    # Use a GUID suffix to guarantee no collisions
+    $tempWav = Join-Path $dir "$base.temp.$([guid]::NewGuid().ToString()).wav"
+
+    try {
+        # Decode FLAC → WAV
+        # --force: decode even if metadata is odd
+        # --decode: output WAV
+        # --output-name: specify destination
+        $arguments = @(
+            "--decode"
+            "--force"
+            "--output-name=$tempWav"
+            $FilePath
+        )
+
+        # Capture output silently
+        $flacOutput = & $flacPath @arguments 2>&1
+
+        if ($DebugFlac) {
+            Write-Host "FLAC output for ${FilePath}:"
+            Write-Host $flacOutput
+        }
+
+
+        if (-not (Test-Path $tempWav)) {
+            throw "FLAC decode failed: WAV not created."
+        }
+
+        # Analyze the temporary WAV
+        $stats = Get-WavSilenceStats -FilePath $tempWav `
+            -SilenceThreshold $SilenceThreshold `
+            -PercentThreshold $PercentThreshold
+
+        # Rewrite the File property so the report refers to the FLAC, not the temp WAV
+        $stats.File = $FilePath
+        return $stats
+    }
+    finally {
+        # Cleanup
+        if (Test-Path $tempWav) {
+            Remove-Item $tempWav -Force
+        }
+    }
+}
+
+function Get-AudioSilenceReport {
     param(
         [Parameter(Mandatory = $true)]
         [string]$Path,
@@ -187,13 +252,21 @@ function Get-WavSilenceReport {
         [double]$PercentThreshold = 90
     )
 
-    $wavFiles = Get-ChildItem -Path $Path -Filter *.wav -Recurse -File
+    $audioFiles = Get-ChildItem -Path $Path -Recurse -File |
+    Where-Object { $_.Extension -in ".wav", ".flac" }
 
-    foreach ($file in $wavFiles) {
+    foreach ($file in $audioFiles) {
         try {
-            Get-WavSilenceStats -FilePath $file.FullName `
-                -SilenceThreshold $SilenceThreshold `
-                -PercentThreshold $PercentThreshold
+            if ($file.Extension -eq ".wav") {
+                Get-WavSilenceStats -FilePath $file.FullName `
+                    -SilenceThreshold $SilenceThreshold `
+                    -PercentThreshold $PercentThreshold
+            }
+            elseif ($file.Extension -eq ".flac") {
+                Get-FlacSilenceStats -FilePath $file.FullName `
+                    -SilenceThreshold $SilenceThreshold `
+                    -PercentThreshold $PercentThreshold
+            }
         }
         catch {
             [PSCustomObject]@{
