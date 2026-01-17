@@ -332,3 +332,5 @@ function Get-AudioSilenceReportParallel {
 
     } -ThrottleLimit $ThrottleLimit
 }
+
+Get-AudioSilenceReportParallel
