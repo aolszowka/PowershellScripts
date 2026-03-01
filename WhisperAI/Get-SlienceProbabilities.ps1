@@ -190,7 +190,7 @@ function Get-FlacSilenceStats {
         [switch]$DebugFlac
     )
 
-    if (-not (Test-Path $FilePath)) {
+    if (-not (Test-Path -LiteralPath $FilePath)) {
         throw "FLAC file not found: $FilePath"
     }
 
@@ -222,7 +222,7 @@ function Get-FlacSilenceStats {
         }
 
 
-        if (-not (Test-Path $tempWav)) {
+        if (-not (Test-Path -LiteralPath $tempWav)) {
             throw "FLAC decode failed: WAV not created."
         }
 
@@ -237,8 +237,8 @@ function Get-FlacSilenceStats {
     }
     finally {
         # Cleanup
-        if (Test-Path $tempWav) {
-            Remove-Item $tempWav -Force
+        if (Test-Path -LiteralPath $tempWav) {
+            Remove-Item -LiteralPath $tempWav -Force
         }
     }
 }
@@ -253,7 +253,7 @@ function Get-AudioSilenceReport {
         [double]$PercentThreshold = 90
     )
 
-    $audioFiles = Get-ChildItem -Path $Path -Recurse -File |
+    $audioFiles = Get-ChildItem -LiteralPath $Path -Recurse -File |
     Where-Object { $_.Extension -in ".wav", ".flac" }
 
     foreach ($file in $audioFiles) {
@@ -291,7 +291,7 @@ function Get-AudioSilenceReportParallel {
         [int]$ThrottleLimit = [System.Environment]::ProcessorCount
     )
 
-    $audioFiles = Get-ChildItem -Path $Path -Recurse -File |
+    $audioFiles = Get-ChildItem -LiteralPath $Path -Recurse -File |
     Where-Object { $_.Extension -in ".wav", ".flac" }
 
     # Capture function source text (preserves signatures)
@@ -333,4 +333,21 @@ function Get-AudioSilenceReportParallel {
     } -ThrottleLimit $ThrottleLimit
 }
 
-Get-AudioSilenceReportParallel
+$results = Get-AudioSilenceReportParallel
+
+# Optionally print the results out to the Console
+$results
+
+# Optionally Relocate the Silent Files into their own folder
+$results | Where-Object { $_.IsSilentThreshold -eq $true } | ForEach-Object {
+    $dir = Split-Path $_.File
+    $silentDir = Join-Path $dir '_Silent'
+
+    # Ensure the folder exists
+    if (-not (Test-Path -LiteralPath $silentDir)) {
+        New-Item -ItemType Directory -Path $silentDir | Out-Null
+    }
+
+    # Move the file
+    Move-Item -LiteralPath $_.File -Destination $silentDir
+}
