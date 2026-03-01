@@ -9,7 +9,7 @@ param(
 )
 
 # Normalize directory path
-$InputDirectory = (Resolve-Path $InputDirectory).Path
+$InputDirectory = (Resolve-Path -LiteralPath $InputDirectory).Path
 
 Write-Host "Scanning directory: $InputDirectory"
 
@@ -22,7 +22,7 @@ foreach ($mp4 in $mp4Files) {
     $baseName = [System.IO.Path]::GetFileNameWithoutExtension($mp4.Name)
     $srtPath = Join-Path $dir "$baseName.srt"
 
-    if (-Not (Test-Path $srtPath)) {
+    if (-Not (Test-Path -LiteralPath $srtPath)) {
         Write-Warning "No SRT found for: $($mp4.FullName)"
         continue
     }
@@ -48,7 +48,7 @@ foreach ($mp4 in $mp4Files) {
 
         # Create _Completed folder if needed
         $completedDir = Join-Path $dir "_Completed"
-        if (-not (Test-Path $completedDir)) {
+        if (-not (Test-Path -LiteralPath $completedDir)) {
             New-Item -ItemType Directory -Path $completedDir | Out-Null
         }
 

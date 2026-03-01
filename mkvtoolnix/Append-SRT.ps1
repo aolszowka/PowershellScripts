@@ -9,11 +9,11 @@ param(
 )
 
 # Normalize directory path
-$Directory = (Resolve-Path $Directory).Path
+$Directory = (Resolve-Path -LiteralPath $Directory).Path
 $completedDir = Join-Path $Directory "_Completed"
 
 # Ensure _Completed exists
-if (-not (Test-Path $completedDir)) {
+if (-not (Test-Path -LiteralPath $completedDir)) {
     New-Item -ItemType Directory -Path $completedDir | Out-Null
 }
 
@@ -25,7 +25,7 @@ foreach ($mkv in $mkvFiles) {
     $baseName = [System.IO.Path]::GetFileNameWithoutExtension($mkv.Name)
     $srtPath = Join-Path $Directory "$baseName.en.srt"
 
-    if (-not (Test-Path $srtPath)) {
+    if (-not (Test-Path -LiteralPath $srtPath)) {
         Write-Warning "No matching .en.srt found for: $($mkv.Name)"
         continue
     }

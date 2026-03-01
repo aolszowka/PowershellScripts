@@ -20,7 +20,7 @@ $completedDir = Join-Path $Directory "_Completed"
 $subsRoot = Join-Path $Directory "subs"
 
 # Ensure _Completed exists
-if (-not (Test-Path $completedDir)) {
+if (-not (Test-Path -LiteralPath $completedDir)) {
     New-Item -ItemType Directory -Path $completedDir | Out-Null
 }
 
