@@ -5,8 +5,6 @@
 .DESCRIPTION
     Provides functions to measure the duration of WAV and FLAC files using
     lightweight header parsing (WAV) and metaflac metadata extraction (FLAC).
-    Includes a unified Measure-AudioDuration and an aggregator
-    Measure-AverageAudioLength for directory-wide statistics.
 
     Written with the assistance of Copilot.
 #>
@@ -111,10 +109,10 @@ function Measure-AudioDuration {
     }
 }
 
-# -------------------------------
-# Average Duration Across Directory
-# -------------------------------
-function Measure-AverageAudioLength {
+# -----------------------------------------
+# Return structured duration results
+# -----------------------------------------
+function Get-AudioDurationResults {
     param(
         [Parameter(Mandatory)]
         [string]$Directory
@@ -125,11 +123,10 @@ function Measure-AverageAudioLength {
 
     if (-not $files) {
         Write-Warning "No WAV or FLAC files found."
-        return
+        return @()   # Always return a collection
     }
 
-    # Emit structured objects
-    $results = foreach ($f in $files) {
+    foreach ($f in $files) {
         $duration = Measure-AudioDuration -Path $f.FullName
 
         [PSCustomObject]@{
@@ -137,17 +134,53 @@ function Measure-AverageAudioLength {
             Duration = $duration
         }
     }
+}
 
-    # Compute average
-    $avgSeconds = ($results.Duration | ForEach-Object { $_.TotalSeconds }) |
+# -----------------------------------------
+# Average Duration Across Directory
+# -----------------------------------------
+function Measure-AverageAudioLength {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Directory
+    )
+
+    $results = Get-AudioDurationResults -Directory $Directory
+
+    if (-not $results) {
+        Write-Warning "No audio files found."
+        return
+    }
+
+    $avgSeconds =
+    ($results.Duration | ForEach-Object { $_.TotalSeconds }) |
     Measure-Object -Average |
     Select-Object -ExpandProperty Average
 
-    # Emit structured objects to pipeline
-    # $results
-
-    # Return average as the function's return value
     return [TimeSpan]::FromSeconds($avgSeconds)
 }
 
-Measure-AverageAudioLength
+# -----------------------------------------
+# Total Duration Across Directory
+# -----------------------------------------
+function Measure-TotalAudioLength {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Directory
+    )
+
+    $results = Get-AudioDurationResults -Directory $Directory
+
+    if (-not $results) {
+        Write-Warning "No audio files found."
+        return
+    }
+
+    $totalSeconds =
+    ($results.Duration.TotalSeconds | Measure-Object -Sum).Sum
+
+    return [TimeSpan]::FromSeconds($totalSeconds)
+}
+
+#Measure-AverageAudioLength
+#Measure-TotalAudioLength
