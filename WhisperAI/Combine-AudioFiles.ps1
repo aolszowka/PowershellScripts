@@ -100,7 +100,8 @@ function Get-AudioDuration {
 function Get-AudioCombinePlan {
     param(
         [Parameter(Mandatory)]
-        [string]$InputDirectory
+        [string]$InputDirectory,
+        [int]$MinuteMark = 60
     )
 
     if (-not (Test-Path $InputDirectory)) {
@@ -117,14 +118,19 @@ function Get-AudioCombinePlan {
 
     $plans = @()
 
+    # Define tolerance window
+    $lowerBound = $MinuteMark - 0.1
+    $upperBound = $MinuteMark + 0.1
+
     for ($i = 0; $i -lt $audioFiles.Count; $i++) {
         $currentFile = $audioFiles[$i]
         $baseNumber = [int64]$currentFile.BaseName
 
-        $duration = Get-AudioDuration -Path $currentFile.FullName -DebugOutput
+        $duration = Get-AudioDuration -Path $currentFile.FullName
 
-        # Only start a chain if the FIRST file is ~60 minutes
-        if ($duration.TotalMinutes -ge 59.9 -and $duration.TotalMinutes -le 60.1) {
+        # Only start a chain if the FIRST file is ~MinuteMark minutes
+        if ($duration.TotalMinutes -ge $lowerBound -and $duration.TotalMinutes -le $upperBound) {
+
             $chain = @($currentFile)
             $nextNumber = $baseNumber + 1
             $lastIndex = $i
@@ -146,8 +152,8 @@ function Get-AudioCombinePlan {
                 $lastIndex = $j
                 $nextNumber++
 
-                # If this next file is NOT ~60 minutes, treat it as the final remainder and stop extending
-                if (-not ($nextDuration.TotalMinutes -ge 59.9 -and $nextDuration.TotalMinutes -le 60.1)) {
+                # If this next file is NOT ~MinuteMark minutes, treat it as the final remainder
+                if (-not ($nextDuration.TotalMinutes -ge $lowerBound -and $nextDuration.TotalMinutes -le $upperBound)) {
                     break
                 }
             }
@@ -162,6 +168,7 @@ function Get-AudioCombinePlan {
                     FilesToCombine  = $chain.FullName
                     FileCount       = $chain.Count
                     SuggestedOutput = $outputFile
+                    MinuteMark      = $MinuteMark
                 }
 
                 # Skip past the files we just consumed in this chain
