@@ -97,6 +97,70 @@ function Get-AudioDuration {
     return [TimeSpan]::FromSeconds($seconds)
 }
 
+<#
+.SYNOPSIS
+Analyzes a directory of audio files and identifies groups of files that should
+be combined based on duration and sequential numbering.
+
+.DESCRIPTION
+Get-AudioCombinePlan scans a directory for WAV or FLAC files whose filenames are
+numeric (typically representing timestamps or sequence numbers). It identifies
+"chains" of files that should be combined into a single output file.
+
+A chain begins when:
+  - The first file in the sequence is approximately the specified MinuteMark
+    (default: 60 minutes).
+
+A chain continues when:
+  - Subsequent files are sequentially numbered (e.g., 20260225002 →
+    20260225003).
+  - Each sequential file is also approximately the MinuteMark in duration.
+
+A chain ends when:
+  - A sequential file is found whose duration is NOT approximately the
+    MinuteMark. This file is treated as the final "remainder" segment and
+    included in the chain.
+  - OR the next file is not sequentially numbered.
+
+The function does NOT perform any combining. Instead, it returns PowerShell
+objects describing the planned combine operations. These objects can later be
+passed to a function such as Invoke-AudioCombinePlan or used for dry-run
+inspection.
+
+.PARAMETER InputDirectory
+The directory containing WAV or FLAC files to analyze. Filenames must be numeric
+(e.g., 20260225002.wav) for sequencing to work correctly.
+
+.PARAMETER MinuteMark
+The expected duration (in minutes) that indicates a file is a "full segment".
+Defaults to 60. Files within ±0.1 minutes of this value are considered matches.
+
+.EXAMPLE
+Get-AudioCombinePlan -InputDirectory "C:\Audio"
+
+Scans the directory and returns planned combine operations using the default
+60-minute heuristic.
+
+.EXAMPLE
+Get-AudioCombinePlan -InputDirectory "C:\Audio" -MinuteMark 30
+
+Uses a 30-minute split heuristic instead of 60 minutes.
+
+.OUTPUTS
+A collection of PSCustomObjects with the following properties:
+
+  FirstFile       - The first file in the chain. FilesToCombine  - Array of full
+  paths to files in the chain. FileCount       - Number of files in the chain.
+  SuggestedOutput - Recommended output filename for the combined file.
+  MinuteMark      - The minute mark used for this analysis.
+
+.NOTES
+This function does not modify any files. It is intended for planning and dry-run
+analysis. Another function should perform the actual combination using
+Combine-AudioFilesCore.
+
+Written with the assistance of Copilot.
+#>
 function Get-AudioCombinePlan {
     param(
         [Parameter(Mandatory)]
@@ -180,7 +244,7 @@ function Get-AudioCombinePlan {
     return $plans
 }
 
-function Combine-AudioFilesInDirectory {
+function Combine-AllAudioFilesInDirectory {
     param(
         [Parameter(Mandatory)]
         [string]$InputDirectory
@@ -209,4 +273,58 @@ function Combine-AudioFilesInDirectory {
     Write-Host "Success! Combined file created at: $outputFile"
 }
 
-Get-AudioCombinePlan
+function Combine-AudioFilesMeetingCriteria {
+    param(
+        [Parameter(Mandatory)]
+        [string]$InputDirectory,
+        [int]$MinuteMark = 60
+    )
+
+    if (-not (Test-Path $InputDirectory)) {
+        throw "Directory not found: $InputDirectory"
+    }
+
+    # 1. Generate the plan
+    $plans = Get-AudioCombinePlan -InputDirectory $InputDirectory -MinuteMark $MinuteMark
+
+    if ($plans.Count -eq 0) {
+        Write-Host "No combine operations detected." -ForegroundColor Yellow
+        return
+    }
+
+    # 2. Display the plan for approval
+    Write-Host "Review the planned operations. Select the ones you want to run." -ForegroundColor Cyan
+    $selected = $plans | Out-GridView -Title "Audio Combine Plan" -PassThru
+
+    if (-not $selected) {
+        Write-Host "No operations selected. Exiting." -ForegroundColor Yellow
+        return
+    }
+
+    # 3. Prepare the completed folder
+    $completedDir = Join-Path $InputDirectory "_CompletedCombined"
+    if (-not (Test-Path $completedDir)) {
+        New-Item -ItemType Directory -Path $completedDir | Out-Null
+    }
+
+    # 4. Execute each selected plan
+    foreach ($plan in $selected) {
+        Write-Host "Combining $($plan.FileCount) files into $($plan.SuggestedOutput)..." -ForegroundColor Green
+
+        Combine-AudioFilesCore `
+            -FilePaths $plan.FilesToCombine `
+            -OutputFile $plan.SuggestedOutput
+
+        # 5. Move source files into the completed folder
+        foreach ($file in $plan.FilesToCombine) {
+            $dest = Join-Path $completedDir (Split-Path $file -Leaf)
+            Move-Item -Path $file -Destination $dest -Force
+        }
+
+        Write-Host "Completed: $($plan.SuggestedOutput)" -ForegroundColor Green
+    }
+
+    Write-Host "All selected operations completed." -ForegroundColor Cyan
+}
+
+Combine-AudioFilesMeetingCriteria
