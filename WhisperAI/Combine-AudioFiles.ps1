@@ -16,6 +16,9 @@ function Combine-AudioFilesCore {
         throw "Combine-AudioFilesCore requires at least two input files."
     }
 
+    # Capture the Date Modified of the first file
+    $firstFileTimestamp = (Get-Item $FilePaths[0]).LastWriteTime
+
     # Create a temporary concat list file
     $listFile = New-TemporaryFile
 
@@ -39,6 +42,11 @@ function Combine-AudioFilesCore {
 
         if ($process.ExitCode -ne 0) {
             throw "FFmpeg failed with exit code $($process.ExitCode)"
+        }
+
+        # Apply the timestamp to the output file
+        if (Test-Path $OutputFile) {
+            (Get-Item $OutputFile).LastWriteTime = $firstFileTimestamp
         }
     }
     finally {
