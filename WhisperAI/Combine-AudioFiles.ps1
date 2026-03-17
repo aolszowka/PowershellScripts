@@ -28,14 +28,28 @@ function Combine-AudioFilesCore {
             "file '$($_.Replace("'", "''"))'"
         } | Set-Content -Encoding UTF8 $listFile.FullName
 
-        # Build FFmpeg command
-        $ffmpegArgs = @(
-            "-f", "concat",
-            "-safe", "0",
-            "-i", "`"$($listFile.FullName)`"",
-            "-c", "copy",
-            "`"$OutputFile`""
-        )
+        $ext = [IO.Path]::GetExtension($OutputFile).ToLowerInvariant()
+
+        if ($ext -eq ".flac") {
+            # Re-encode FLAC so STREAMINFO/duration is correct
+            $ffmpegArgs = @(
+                "-f", "concat",
+                "-safe", "0",
+                "-i", "`"$($listFile.FullName)`"",
+                "-c:a", "flac",
+                "`"$OutputFile`""
+            )
+        }
+        else {
+            # WAV (and others) can safely stream-copy
+            $ffmpegArgs = @(
+                "-f", "concat",
+                "-safe", "0",
+                "-i", "`"$($listFile.FullName)`"",
+                "-c", "copy",
+                "`"$OutputFile`""
+            )
+        }
 
         Write-Host "Combining $($FilePaths.Count) files into $OutputFile ..."
         $process = Start-Process -FilePath $ffmpegPath -ArgumentList $ffmpegArgs -NoNewWindow -Wait -PassThru
