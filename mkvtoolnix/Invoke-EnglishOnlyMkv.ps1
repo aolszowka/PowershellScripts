@@ -1,4 +1,6 @@
 # Toy program to recreate an MKV with only English Audio and Subtitles
+#
+# Written with the assistance of Copilot.
 param(
     [Parameter(Mandatory = $true)]
     [string]$InputFolder,
