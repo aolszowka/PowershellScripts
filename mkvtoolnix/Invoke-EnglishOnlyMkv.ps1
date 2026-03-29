@@ -96,7 +96,7 @@ foreach ($file in $files) {
 
     # Move original file into _Completed
     $dest = Join-Path $completedFolder $file.Name
-    Move-Item -LiteralPath $file.FullName -Destination $dest -Force
+    Move-Item -LiteralPath $file.FullName -Destination $dest
 
     Write-Host "Moved original to: $dest"
     Write-Host ""
