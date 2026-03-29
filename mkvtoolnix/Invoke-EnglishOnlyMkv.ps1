@@ -16,6 +16,12 @@ if ($Recurse) { $searchParams.Recurse = $true }
 
 $files = Get-ChildItem @searchParams
 
+# Create _Completed folder once
+$completedFolder = Join-Path $InputFolder "_Completed"
+if (-not (Test-Path $completedFolder)) {
+    New-Item -ItemType Directory -Path $completedFolder | Out-Null
+}
+
 foreach ($file in $files) {
 
     Write-Host "Processing: $($file.FullName)"
@@ -79,7 +85,18 @@ foreach ($file in $files) {
     Write-Host "Running mkvmerge..."
     & $MkvMergePath $arguments
 
+    if (-not (Test-Path $outputFile)) {
+        Write-Warning "mkvmerge failed; output file not created. Skipping move."
+        continue
+    }
+
     Write-Host "Created: $outputFile"
+
+    # Move original file into _Completed
+    $dest = Join-Path $completedFolder $file.Name
+    Move-Item -LiteralPath $file.FullName -Destination $dest -Force
+
+    Write-Host "Moved original to: $dest"
     Write-Host ""
 }
 
