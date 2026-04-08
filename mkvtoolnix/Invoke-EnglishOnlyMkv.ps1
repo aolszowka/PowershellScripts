@@ -87,7 +87,7 @@ foreach ($file in $files) {
     Write-Host "Running mkvmerge..."
     & $MkvMergePath $arguments
 
-    if (-not (Test-Path $outputFile)) {
+    if (-not (Test-Path -LiteralPath $outputFile)) {
         Write-Warning "mkvmerge failed; output file not created. Skipping move."
         continue
     }
