@@ -11,7 +11,7 @@ param(
 
 # Build base headers
 $Headers = @{
-    "X-Emby-Token" = $ApiKey
+    "Authorization" = "MediaBrowser Token=`"$ApiKey`""
 }
 
 # Query all series

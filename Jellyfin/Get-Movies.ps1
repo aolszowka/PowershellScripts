@@ -1,6 +1,6 @@
 # --- CONFIGURATION ---
 $Server = ""      # Change to your Jellyfin server URL
-$ApiKey = ""          # Replace with your API key
+$ApiKey = ""      # Replace with your API key
 $OutputCsv = "Jellyfin_MovieList.csv"
 
 # --- BUILD API URL ---
@@ -9,7 +9,7 @@ $Url = "$Server/Items?IncludeItemTypes=Movie&Recursive=true&Fields=OfficialRatin
 
 # --- MAKE REQUEST ---
 $Headers = @{
-    "X-Emby-Token" = $ApiKey
+    "Authorization" = "MediaBrowser Token=`"$ApiKey`""
 }
 
 Write-Host "Querying Jellyfin server..."
