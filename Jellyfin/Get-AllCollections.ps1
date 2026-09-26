@@ -9,7 +9,7 @@ param(
 )
 
 $Headers = @{
-    "X-Emby-Token" = $ApiKey
+    "Authorization" = "MediaBrowser Token=`"$ApiKey`""
 }
 
 $Url = "$JellyfinServer/Items?IncludeItemTypes=BoxSet&Recursive=true"

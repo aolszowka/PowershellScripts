@@ -14,7 +14,7 @@ param(
 
 # Build headers
 $Headers = @{
-    "X-Emby-Token" = $ApiKey
+    "Authorization" = "MediaBrowser Token=`"$ApiKey`""
 }
 
 # Build URL

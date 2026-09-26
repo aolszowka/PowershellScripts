@@ -9,7 +9,11 @@ param(
 
 $uri = "$ServerUrl/Items?IncludeItemTypes=Movie&Recursive=true&Fields=ProviderIds"
 
-$response = Invoke-RestMethod -Uri $uri -Headers @{ "X-Emby-Token" = $ApiKey }
+$Headers = @{
+    "Authorization" = "MediaBrowser Token=`"$ApiKey`""
+}
+
+$response = Invoke-RestMethod -Uri $uri -Headers $Headers
 
 $missing = @()
 

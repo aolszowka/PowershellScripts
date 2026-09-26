@@ -13,7 +13,7 @@ param(
 )
 
 $Headers = @{
-    "X-Emby-Token" = $ApiKey
+    "Authorization" = "MediaBrowser Token=`"$ApiKey`""
 }
 
 $Url = "$JellyfinServer/Items?ParentId=$CollectionId"
